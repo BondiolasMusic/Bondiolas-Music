@@ -73,13 +73,17 @@
         let dataCanciones = [];
 
         // Función para limpiar links de Drive
+        // Función mejorada para saltar bloqueos de Google Drive
         function limpiarLink(url) {
             if (!url) return "";
-            return url.trim()
+            let clean = url.trim()
                 .replace("/file/d/", "/uc?export=download&id=")
                 .replace("/view?usp=sharing", "")
                 .replace("/view?usp=drive_link", "")
                 .replace("/view", "");
+            
+            // Agregamos el proxy para evitar el bloqueo de reproducción
+            return "https://corsproxy.io/?" + encodeURIComponent(clean);
         }
 
         async function init() {
