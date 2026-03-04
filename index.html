@@ -72,17 +72,16 @@
         let dataAlbumes = [];
         let dataCanciones = [];
 
-        // Función para limpiar links de Drive
-        // Función mejorada para saltar bloqueos de Google Drive
+        // LA FUNCIÓN CLAVE: Limpia el link y agrega el PROXY para que Google no bloquee el archivo
         function limpiarLink(url) {
             if (!url) return "";
             let clean = url.trim()
                 .replace("/file/d/", "/uc?export=download&id=")
                 .replace("/view?usp=sharing", "")
                 .replace("/view?usp=drive_link", "")
-                .replace("/view", "");
+                .split("/view")[0]; // Corta cualquier cosa después de /view
             
-            // Agregamos el proxy para evitar el bloqueo de reproducción
+            // Usamos corsproxy.io para que el navegador pueda leer el archivo de Drive
             return "https://corsproxy.io/?" + encodeURIComponent(clean);
         }
 
@@ -93,7 +92,7 @@
                 dataAlbumes = parseTSV(await resAlb.text());
                 dataCanciones = parseTSV(await resCan.text());
                 renderizarInicio();
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Error cargando datos:", e); }
         }
 
         function parseTSV(text) {
@@ -116,9 +115,11 @@
         function verAlbum(id) {
             const album = dataAlbumes.find(a => a[0].trim() == id.trim());
             const canciones = dataCanciones.filter(c => c[0].trim() == id.trim());
+            
             document.getElementById('album-cover-grande').src = limpiarLink(album[3]);
             document.getElementById('album-titulo-grande').innerText = album[1];
             document.getElementById('album-artista-grande').innerText = album[2];
+            
             const lista = document.getElementById('lista-canciones');
             lista.innerHTML = '';
             canciones.forEach((c, index) => {
@@ -145,7 +146,7 @@
             audio.play();
         }
 
-        init();
-    </script>
-</body>
+            init();
+        </script>
+    </body>
 </html>
