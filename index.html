@@ -190,14 +190,17 @@
         }
 
         function cerrarAlbum() { document.getElementById('vista-album').style.display = 'none'; }
-
-        function reproducir(titulo, artista, url, img) {
-            document.getElementById('p-titulo').innerText = titulo;
-            document.getElementById('p-artista').innerText = artista;
-            document.getElementById('p-img').src = img;
-            const audio = document.getElementById('main-audio');
-            audio.src = url;
-            audio.play();
+function reproducir(titulo, artista, url, img) {
+    document.getElementById('p-titulo').innerText = titulo;
+    document.getElementById('p-artista').innerText = artista;
+    document.getElementById('p-img').src = img.replace("/file/d/", "/uc?export=download&id=").replace("/view?usp=sharing", "").replace("/view?usp=drive_link", "");
+    
+    // Esta línea limpia el link de la canción automáticamente
+    const cleanUrl = url.replace("/file/d/", "/uc?export=download&id=").replace("/view?usp=sharing", "").replace("/view?usp=drive_link", "");
+    
+    const audio = document.getElementById('main-audio');
+    audio.src = cleanUrl;
+    audio.play();
         }
 
         init();
