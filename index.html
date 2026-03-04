@@ -13,16 +13,16 @@
             --texto: #ffffff;
             --texto-dim: #b3b3b3;
         }
-        body { background-color: var(--fondo); color: var(--texto); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 110px; overflow-x: hidden; }
+        body { background-color: var(--fondo); color: var(--texto); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 110px; }
         header { padding: 30px 20px; background: linear-gradient(to bottom, #222, var(--fondo)); }
         .container { padding: 0 20px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
         .card { background: var(--fondo-tarjeta); padding: 15px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
         .card:hover { background: #282828; transform: translateY(-5px); }
         .card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; margin-bottom: 10px; box-shadow: 0 8px 15px rgba(0,0,0,0.5); }
-        .card .title { font-weight: bold; font-size: 1rem; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card .title { font-weight: bold; font-size: 1rem; margin-bottom: 5px; }
         .card .artist { color: var(--texto-dim); font-size: 0.85rem; }
-        #vista-album { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--fondo); z-index: 100; overflow-y: auto; padding: 40px 20px; box-sizing: border-box; }
+        #vista-album { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--fondo); z-index: 100; overflow-y: auto; padding: 40px 20px; }
         .btn-volver { background: none; border: 1px solid white; color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; margin-bottom: 20px; }
         .song-item { display: flex; align-items: center; padding: 10px; border-radius: 5px; cursor: pointer; }
         .song-item:hover { background: rgba(255,255,255,0.1); }
@@ -42,12 +42,12 @@
 
     <div id="vista-album">
         <button class="btn-volver" onclick="cerrarAlbum()">← Volver</button>
-        <div style="display: flex; flex-wrap: wrap; gap: 30px; margin-bottom: 30px; align-items: flex-end;">
+        <div style="display: flex; gap: 30px; margin-bottom: 30px; align-items: flex-end; flex-wrap: wrap;">
             <img id="album-cover-grande" src="" style="width: 200px; height: 200px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); object-fit: cover;">
             <div>
                 <p style="text-transform: uppercase; font-size: 12px; font-weight: bold; margin: 0;">Álbum</p>
                 <h2 id="album-titulo-grande" style="font-size: 3rem; margin: 0;"></h2>
-                <p id="album-artista-grande" style="color: var(--texto-dim); font-size: 1.2rem;"></p>
+                <p id="album-artista-grande" style="color: var(--texto-dim);"></p>
             </div>
         </div>
         <div id="lista-canciones"></div>
@@ -66,4 +66,100 @@
     </div>
 
     <script>
-        const URL_ALBUMES = "
+        const URL_ALBUMES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=0&single=true&output=tsv";
+        const URL_CANCIONES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=92592278&single=true&output=tsv";
+
+        let dataAlbumes = [];
+        let dataCanciones = [];
+
+        function limpiarLink(url) {
+            if (!url || url.trim() === "") return "";
+            let link = url.trim();
+            // Si el link ya tiene el formato de descarga directa, solo le agregamos el proxy
+            if (link.includes("uc?export=download")) {
+                return "https://corsproxy.io/?" + encodeURIComponent(link);
+            }
+            // Si es un link normal de visualización, lo convertimos
+            let clean = link.replace("/file/d/", "/uc?export=download&id=")
+                            .replace("/view?usp=sharing", "")
+                            .replace("/view?usp=drive_link", "")
+                            .split("/view")[0];
+            return "https://corsproxy.io/?" + encodeURIComponent(clean);
+        }
+
+        async function init() {
+            try {
+                const [resAlb, resCan] = await Promise.all([
+                    fetch(URL_ALBUMES).then(r => r.text()),
+                    fetch(URL_CANCIONES).then(r => r.text())
+                ]);
+                dataAlbumes = parseTSV(resAlb);
+                dataCanciones = parseTSV(resCan);
+                renderizarInicio();
+            } catch (e) {
+                console.error("Error cargando datos:", e);
+                alert("Error al cargar la planilla. Revisa que esté publicada en la web.");
+            }
+        }
+
+        function parseTSV(text) {
+            const filas = text.split(/\r?\n/);
+            return filas.slice(1)
+                        .filter(f => f.trim() !== "")
+                        .map(f => f.split('\t'));
+        }
+
+        function renderizarInicio() {
+            const grid = document.getElementById('grid-albumes');
+            grid.innerHTML = '';
+            dataAlbumes.forEach(alb => {
+                if (alb.length < 4) return;
+                grid.innerHTML += `
+                    <div class="card" onclick="verAlbum('${alb[0].trim()}')">
+                        <img src="${limpiarLink(alb[3])}">
+                        <div class="title">${alb[1]}</div>
+                        <div class="artist">${alb[2]}</div>
+                    </div>`;
+            });
+        }
+
+        function verAlbum(id) {
+            const album = dataAlbumes.find(a => a[0].trim() === id);
+            if (!album) return;
+
+            const canciones = dataCanciones.filter(c => c[0].trim() === id);
+            
+            document.getElementById('album-cover-grande').src = limpiarLink(album[3]);
+            document.getElementById('album-titulo-grande').innerText = album[1];
+            document.getElementById('album-artista-grande').innerText = album[2];
+            
+            const lista = document.getElementById('lista-canciones');
+            lista.innerHTML = '';
+            canciones.forEach((c, index) => {
+                lista.innerHTML += `
+                    <div class="song-item" onclick="reproducir('${c[1].replace(/'/g, "\\'")}', '${album[2].replace(/'/g, "\\'")}', '${c[2]}', '${album[3]}')">
+                        <div class="num">${index + 1}</div>
+                        <div class="details">
+                            <div style="font-weight: 500;">${c[1]}</div>
+                            <div style="font-size: 0.8rem; color: var(--texto-dim);">${album[2]}</div>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('vista-album').style.display = 'block';
+        }
+
+        function cerrarAlbum() { document.getElementById('vista-album').style.display = 'none'; }
+
+        function reproducir(titulo, artista, url, img) {
+            document.getElementById('p-titulo').innerText = titulo;
+            document.getElementById('p-artista').innerText = artista;
+            document.getElementById('p-img').src = limpiarLink(img);
+            const audio = document.getElementById('main-audio');
+            audio.src = limpiarLink(url);
+            audio.play().catch(e => console.warn("Auto-play bloqueado por el navegador."));
+        }
+
+        init();
+    </script>
+</body>
+</html>
