@@ -40,7 +40,7 @@
             <div id="p-tit" style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Selecciona algo</div>
             <div id="p-art" style="color: #b3b3b3; font-size: 0.8rem;">-</div>
         </div>
-        <audio id="main-audio" controls autoplay></audio>
+        <audio id="main-audio" controls></audio>
     </div>
 
     <script>
@@ -49,22 +49,25 @@
 
         let dataA = [], dataC = [];
 
-        // Función infalible para links de Drive
-        function limpiar(url, esAudio = false) {
+        function obtenerID(url) {
             if (!url) return "";
-            let id = "";
-            if (url.includes("id=")) id = url.split("id=")[1].split("&")[0];
-            else if (url.includes("/d/")) id = url.split("/d/")[1].split("/")[0];
-            
-            if (!id) return url;
+            if (url.includes("id=")) return url.split("id=")[1].split("&")[0];
+            if (url.includes("/d/")) return url.split("/d/")[1].split("/")[0];
+            return "";
+        }
 
-            // Formato de link directo
-            const direct = `https://docs.google.com/uc?export=download&id=${id}`;
-            
-            // Si es audio, usamos un proxy que permite streaming. Si es imagen, otro más rápido.
-            return esAudio 
-                ? "https://corsproxy.io/?" + encodeURIComponent(direct)
-                : "https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=604800&url=" + encodeURIComponent(direct);
+        function limpiarImagen(url) {
+            const id = obtenerID(url);
+            if (!id) return url;
+            // Volvemos al proxy de googleusercontent que mencionaste para las fotos
+            return `http://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=604800&url=https://docs.google.com/uc?export=download%26id=${id}`;
+        }
+
+        function limpiarAudio(url) {
+            const id = obtenerID(url);
+            if (!id) return url;
+            // Para audio usamos export=media que es lo más directo para el reproductor
+            return `https://docs.google.com/uc?export=media&id=${id}`;
         }
 
         async function init() {
@@ -73,7 +76,7 @@
                 dataA = (await rA.text()).split("\n").slice(1).map(l => l.split("\t"));
                 dataC = (await rC.text()).split("\n").slice(1).map(l => l.split("\t"));
                 render();
-            } catch (e) { alert("Error al cargar la planilla. Verificá que esté publicada."); }
+            } catch (e) { console.error("Error al cargar datos"); }
         }
 
         function render() {
@@ -82,7 +85,7 @@
             dataA.forEach(a => {
                 if(!a[1]) return;
                 grid.innerHTML += `<div class="card" onclick="ver('${a[0].trim()}')">
-                    <img src="${limpiar(a[3])}">
+                    <img src="${limpiarImagen(a[3])}">
                     <div style="margin-top:10px; font-weight:bold;">${a[1]}</div>
                     <div style="color:#b3b3b3; font-size:0.8rem;">${a[2]}</div>
                 </div>`;
@@ -91,12 +94,12 @@
 
         function ver(id) {
             const a = dataA.find(x => x[0].trim() == id);
-            document.getElementById("alb-img").src = limpiar(a[3]);
+            document.getElementById("alb-img").src = limpiarImagen(a[3]);
             document.getElementById("alb-tit").innerText = a[1];
             const lista = document.getElementById("lista-canciones");
             lista.innerHTML = "";
             dataC.filter(x => x[0].trim() == id).forEach(c => {
-                lista.innerHTML += `<div class="song-item" onclick="sonar('${c[1]}', '${a[2]}', '${c[2]}')">
+                lista.innerHTML += `<div class="song-item" onclick="sonar('${c[1].replace(/'/g, "\\'")}', '${a[2].replace(/'/g, "\\'")}', '${c[2]}')">
                     <span style="margin-right:15px; color:var(--color);">▶</span>
                     <div>${c[1]}</div>
                 </div>`;
@@ -108,8 +111,9 @@
             document.getElementById("p-tit").innerText = t;
             document.getElementById("p-art").innerText = art;
             const audio = document.getElementById("main-audio");
-            audio.src = limpiar(url, true);
-            audio.play();
+            audio.src = limpiarAudio(url);
+            audio.load();
+            audio.play().catch(e => console.log("Reproducción bloqueada hasta interacción."));
         }
 
         function cerrarAlbum() { document.getElementById("vista-album").style.display = "none"; }
