@@ -13,24 +13,24 @@
             --texto: #ffffff;
             --texto-dim: #b3b3b3;
         }
-        body { background-color: var(--fondo); color: var(--texto); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 110px; }
+        body { background-color: var(--fondo); color: var(--texto); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 110px; overflow-x: hidden; }
         header { padding: 30px 20px; background: linear-gradient(to bottom, #222, var(--fondo)); }
         .container { padding: 0 20px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
         .card { background: var(--fondo-tarjeta); padding: 15px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
         .card:hover { background: #282828; transform: translateY(-5px); }
         .card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; margin-bottom: 10px; box-shadow: 0 8px 15px rgba(0,0,0,0.5); }
-        .card .title { font-weight: bold; font-size: 1rem; margin-bottom: 5px; }
+        .card .title { font-weight: bold; font-size: 1rem; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .card .artist { color: var(--texto-dim); font-size: 0.85rem; }
-        #vista-album { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--fondo); z-index: 100; overflow-y: auto; padding: 40px 20px; }
+        #vista-album { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--fondo); z-index: 100; overflow-y: auto; padding: 40px 20px; box-sizing: border-box; }
         .btn-volver { background: none; border: 1px solid white; color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; margin-bottom: 20px; }
         .song-item { display: flex; align-items: center; padding: 10px; border-radius: 5px; cursor: pointer; }
         .song-item:hover { background: rgba(255,255,255,0.1); }
         .song-item .num { width: 30px; color: var(--texto-dim); }
         .song-item .details { flex-grow: 1; }
-        .player { position: fixed; bottom: 0; width: 100%; background: #181818; border-top: 1px solid #282828; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; z-index: 200; }
+        .player { position: fixed; bottom: 0; width: 100%; background: #181818; border-top: 1px solid #282828; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; z-index: 200; box-sizing: border-box; }
         .player-info { display: flex; align-items: center; width: 30%; }
-        .player-info img { width: 50px; height: 50px; border-radius: 4px; margin-right: 15px; }
+        .player-info img { width: 50px; height: 50px; border-radius: 4px; margin-right: 15px; object-fit: cover; }
         audio { width: 40%; }
     </style>
 </head>
@@ -42,12 +42,12 @@
 
     <div id="vista-album">
         <button class="btn-volver" onclick="cerrarAlbum()">← Volver</button>
-        <div style="display: flex; gap: 30px; margin-bottom: 30px; align-items: flex-end;">
-            <img id="album-cover-grande" src="" style="width: 200px; height: 200px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+        <div style="display: flex; flex-wrap: wrap; gap: 30px; margin-bottom: 30px; align-items: flex-end;">
+            <img id="album-cover-grande" src="" style="width: 200px; height: 200px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); object-fit: cover;">
             <div>
-                <p style="text-transform: uppercase; font-size: 12px; font-weight: bold;">Álbum</p>
+                <p style="text-transform: uppercase; font-size: 12px; font-weight: bold; margin: 0;">Álbum</p>
                 <h2 id="album-titulo-grande" style="font-size: 3rem; margin: 0;"></h2>
-                <p id="album-artista-grande" style="color: var(--texto-dim);"></p>
+                <p id="album-artista-grande" style="color: var(--texto-dim); font-size: 1.2rem;"></p>
             </div>
         </div>
         <div id="lista-canciones"></div>
@@ -55,9 +55,9 @@
 
     <div class="player">
         <div class="player-info">
-            <img id="p-img" src="">
-            <div>
-                <div id="p-titulo" style="font-weight: bold; font-size: 0.9rem;">Selecciona algo</div>
+            <img id="p-img" src="https://via.placeholder.com/50">
+            <div style="overflow: hidden;">
+                <div id="p-titulo" style="font-weight: bold; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Selecciona algo</div>
                 <div id="p-artista" style="color: var(--texto-dim); font-size: 0.75rem;">-</div>
             </div>
         </div>
@@ -66,87 +66,4 @@
     </div>
 
     <script>
-        const URL_ALBUMES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=0&single=true&output=tsv";
-        const URL_CANCIONES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=92592278&single=true&output=tsv";
-
-        let dataAlbumes = [];
-        let dataCanciones = [];
-
-        // LA FUNCIÓN CLAVE: Limpia el link y agrega el PROXY para que Google no bloquee el archivo
-        function limpiarLink(url) {
-            if (!url) return "";
-            let clean = url.trim()
-                .replace("/file/d/", "/uc?export=download&id=")
-                .replace("/view?usp=sharing", "")
-                .replace("/view?usp=drive_link", "")
-                .split("/view")[0]; // Corta cualquier cosa después de /view
-            
-            // Usamos corsproxy.io para que el navegador pueda leer el archivo de Drive
-            return "https://corsproxy.io/?" + encodeURIComponent(clean);
-        }
-
-        async function init() {
-            try {
-                const resAlb = await fetch(URL_ALBUMES);
-                const resCan = await fetch(URL_CANCIONES);
-                dataAlbumes = parseTSV(await resAlb.text());
-                dataCanciones = parseTSV(await resCan.text());
-                renderizarInicio();
-            } catch (e) { console.error("Error cargando datos:", e); }
-        }
-
-        function parseTSV(text) {
-            return text.split('\n').slice(1).filter(l => l.trim()).map(line => line.split('\t'));
-        }
-
-        function renderizarInicio() {
-            const grid = document.getElementById('grid-albumes');
-            grid.innerHTML = '';
-            dataAlbumes.forEach(alb => {
-                grid.innerHTML += `
-                    <div class="card" onclick="verAlbum('${alb[0]}')">
-                        <img src="${limpiarLink(alb[3])}">
-                        <div class="title">${alb[1]}</div>
-                        <div class="artist">${alb[2]}</div>
-                    </div>`;
-            });
-        }
-
-        function verAlbum(id) {
-            const album = dataAlbumes.find(a => a[0].trim() == id.trim());
-            const canciones = dataCanciones.filter(c => c[0].trim() == id.trim());
-            
-            document.getElementById('album-cover-grande').src = limpiarLink(album[3]);
-            document.getElementById('album-titulo-grande').innerText = album[1];
-            document.getElementById('album-artista-grande').innerText = album[2];
-            
-            const lista = document.getElementById('lista-canciones');
-            lista.innerHTML = '';
-            canciones.forEach((c, index) => {
-                lista.innerHTML += `
-                    <div class="song-item" onclick="reproducir('${c[1]}', '${album[2]}', '${c[2]}', '${album[3]}')">
-                        <div class="num">${index + 1}</div>
-                        <div class="details">
-                            <div style="font-weight: 500;">${c[1]}</div>
-                            <div style="font-size: 0.8rem; color: var(--texto-dim);">${album[2]}</div>
-                        </div>
-                    </div>`;
-            });
-            document.getElementById('vista-album').style.display = 'block';
-        }
-
-        function cerrarAlbum() { document.getElementById('vista-album').style.display = 'none'; }
-
-        function reproducir(titulo, artista, url, img) {
-            document.getElementById('p-titulo').innerText = titulo;
-            document.getElementById('p-artista').innerText = artista;
-            document.getElementById('p-img').src = limpiarLink(img);
-            const audio = document.getElementById('main-audio');
-            audio.src = limpiarLink(url);
-            audio.play();
-        }
-
-            init();
-        </script>
-    </body>
-</html>
+        const URL_ALBUMES = "
