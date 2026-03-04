@@ -30,20 +30,20 @@
         .song-item .details { flex-grow: 1; }
         .player { position: fixed; bottom: 0; width: 100%; background: #181818; border-top: 1px solid #282828; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; z-index: 200; box-sizing: border-box; }
         .player-info { display: flex; align-items: center; width: 30%; }
-        .player-info img { width: 50px; height: 50px; border-radius: 4px; margin-right: 15px; object-fit: cover; }
+        .player-info img { width: 50px; height: 50px; border-radius: 4px; margin-right: 15px; object-fit: cover; background: #333; }
         audio { width: 40%; }
     </style>
 </head>
 <body>
     <div id="main-view">
-        <header><h1>Mis Álbumes</h1></header>
+        <header><h1>Bondiolas Music</h1></header>
         <div class="container"><div id="grid-albumes" class="grid"></div></div>
     </div>
 
     <div id="vista-album">
         <button class="btn-volver" onclick="cerrarAlbum()">← Volver</button>
         <div style="display: flex; gap: 30px; margin-bottom: 30px; align-items: flex-end; flex-wrap: wrap;">
-            <img id="album-cover-grande" src="" style="width: 200px; height: 200px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); object-fit: cover;">
+            <img id="album-cover-grande" src="" style="width: 200px; height: 200px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); object-fit: cover; background: #333;">
             <div>
                 <p style="text-transform: uppercase; font-size: 12px; font-weight: bold; margin: 0;">Álbum</p>
                 <h2 id="album-titulo-grande" style="font-size: 3rem; margin: 0;"></h2>
@@ -72,23 +72,23 @@
         let dataAlbumes = [];
         let dataCanciones = [];
 
+        // FUNCIÓN DE LIMPIEZA MEJORADA
         function limpiarLink(url) {
             if (!url || url.trim() === "") return "";
-            let link = url.trim();
             let id = "";
             
-            // Extraer ID de cualquier formato de link de Drive
-            if (link.includes("id=")) {
-                id = link.split("id=")[1].split("&")[0];
-            } else if (link.includes("/d/")) {
-                id = link.split("/d/")[1].split("/")[0];
+            // Extraer el ID de cualquier tipo de link de Drive
+            if (url.includes("id=")) {
+                id = url.split("id=")[1].split("&")[0];
+            } else if (url.includes("/d/")) {
+                id = url.split("/d/")[1].split("/")[0];
             }
 
-            if (!id) return link;
+            if (!id) return url;
             
-            // Forzar formato de descarga directa y pasar por proxy
+            // Usamos un proxy diferente y más rápido que suele funcionar mejor con audio
             const urlDirecta = `https://docs.google.com/uc?export=download&id=${id}`;
-            return "https://corsproxy.io/?" + encodeURIComponent(urlDirecta);
+            return "https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=604800&url=" + encodeURIComponent(urlDirecta);
         }
 
         async function init() {
@@ -151,9 +151,18 @@
             document.getElementById('p-artista').innerText = artista;
             document.getElementById('p-img').src = limpiarLink(img);
             const audio = document.getElementById('main-audio');
-            audio.src = limpiarLink(url);
-            audio.load(); // Carga el nuevo origen
-            audio.play().catch(e => console.log("Reproducción manual requerida."));
+            
+            // Para el audio usamos un proxy distinto que permite streaming
+            const idAudio = url.includes("id=") ? url.split("id=")[1].split("&")[0] : url.split("/d/")[1].split("/")[0];
+            audio.src = `https://docs.google.com/uc?export=download&id=${idAudio}`;
+            
+            audio.load();
+            audio.play().catch(e => {
+                console.log("Error de reproducción. Intentando con proxy...");
+                audio.src = "https://corsproxy.io/?" + encodeURIComponent(audio.src);
+                audio.load();
+                audio.play();
+            });
         }
 
         init();
