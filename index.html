@@ -58,11 +58,11 @@
             if (!id) return url;
 
             if (esAudio) {
-                // Formato 'media' para que el reproductor no se trabe
+                // Ahora que tu Excel tiene 'media', esto lo confirma
                 return `https://docs.google.com/uc?export=media&id=${id}`;
             } else {
-                // El proxy lh3 es el reemplazo moderno y estable de lo que buscabas
-                return `https://lh3.googleusercontent.com/d/${id}`;
+                // Usamos el visualizador directo de Drive para las portadas
+                return `https://docs.google.com/uc?export=view&id=${id}`;
             }
         }
 
