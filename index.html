@@ -52,15 +52,16 @@
 
         function limpiar(url, esAudio = false) {
             if (!url) return "";
-            const match = url.match(/(?:id=|\/d\/)([\w-]+)/);
+            // Esta nueva expresión regular ignora símbolos como $ o espacios al inicio del ID
+            const match = url.match(/(?:id=|d\/)([\w-]{25,})/);
             const id = match ? match[1] : "";
-            if (!id) return url;
+            
+            if (!id) return url.trim();
 
             if (esAudio) {
-                // Cambiamos a UC?EXPORT=MEDIA que es el estándar para streaming
-                return `https://docs.google.com/uc?export=media&id=${id}`;
+                // Usamos drive.google.com que suele ser más estable para streaming directo
+                return `https://drive.google.com/uc?export=media&id=${id}`;
             } else {
-                // Thumbnail rápido para portadas
                 return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
             }
         }
@@ -86,7 +87,9 @@
 
         function verAlbum(id) {
             const alb = albumes.find(a => a[0].trim() == id.trim());
+            if (!alb) return;
             const cans = canciones.filter(c => c[0].trim() == id.trim());
+            
             document.getElementById('alb-img').src = limpiar(alb[3]);
             document.getElementById('alb-tit').innerText = alb[1];
             document.getElementById('alb-art').innerText = alb[2];
@@ -94,12 +97,19 @@
             const lista = document.getElementById('lista-canciones');
             lista.innerHTML = '';
             cans.forEach((c, i) => {
-                const tit = c[1].replace(/'/g, "\\'");
-                const art = alb[2].replace(/'/g, "\\'");
+                // Evitamos errores con nombres que tengan comillas
+                const titSafe = c[1].replace(/'/g, "\\'");
+                const artSafe = alb[2].replace(/'/g, "\\'");
+                const urlSafe = c[2].trim();
+                const imgSafe = alb[3].trim();
+
                 lista.innerHTML += `
-                    <div class="song-item" onclick="sonar('${tit}', '${art}', '${c[2]}', '${alb[3]}')">
+                    <div class="song-item" onclick="sonar('${titSafe}', '${artSafe}', '${urlSafe}', '${imgSafe}')">
                         <div style="width:30px; color:#b3b3b3;">${i+1}</div>
-                        <div><div style="font-weight:500;">${c[1]}</div><div style="font-size:0.8rem; color:#b3b3b3;">${alb[2]}</div></div>
+                        <div>
+                            <div style="font-weight:500;">${c[1]}</div>
+                            <div style="font-size:0.8rem; color:#b3b3b3;">${alb[2]}</div>
+                        </div>
                     </div>`;
             });
             document.getElementById('vista-album').style.display = 'block';
@@ -109,14 +119,19 @@
             document.getElementById('p-tit').innerText = t;
             document.getElementById('p-art').innerText = art;
             document.getElementById('p-img').src = limpiar(img);
+            
             const audio = document.getElementById('main-audio');
+            const finalUrl = limpiar(url, true);
+            
+            console.log("Intentando reproducir:", finalUrl); // Para debug en consola
             
             audio.pause();
-            audio.src = limpiar(url, true);
-            audio.load(); // Importante para que el navegador reconozca el nuevo archivo
+            audio.src = finalUrl;
+            audio.load();
             
             audio.play().catch(e => {
-                console.error("Error al reproducir:", e);
+                console.error("Error crítico de reproducción:", e);
+                alert("No se pudo reproducir la canción. Revisa que el archivo en Drive sea PÚBLICO.");
             });
         }
 
