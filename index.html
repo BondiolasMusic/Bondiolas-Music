@@ -113,13 +113,21 @@
         .control-btn:hover { color: var(--primary-light); transform: scale(1.1); }
         .control-btn.active { color: var(--primary-light); text-shadow: 0 0 10px var(--primary); }
 
+        /* CAMBIO: CENTRADO DE ICONOS */
         .play-main {
             background: linear-gradient(45deg, var(--primary), var(--primary-light));
             color: white; width: 45px; height: 45px; border-radius: 50%; 
             box-shadow: 0 4px 10px rgba(0, 77, 9, 0.5); border: 2px solid rgba(255,255,255,0.2);
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
         }
 
         .p-icon-play, .p-icon-pause { display: none; }
+        /* Ajuste visual para que el triángulo del play se vea centrado al ojo */
+        .p-icon-play { margin-left: 3px; } 
+
         .playing .p-icon-pause { display: block; }
         .paused .p-icon-play { display: block; }
 
