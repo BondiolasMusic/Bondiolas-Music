@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bondiolas Music | Premium</title>
+    <title>Bondiolas Music</title>
     <style>
         :root { 
             --primary: #004D09; 
-            --primary-light: #008f11;
-            --fondo: #050505; 
-            --tarjeta: rgba(255, 255, 255, 0.05); 
+            --primary-light: #007a0e;
+            --fondo: #0a0a0a; 
+            --tarjeta: rgba(255, 255, 255, 0.06); 
             --texto: #ffffff; 
-            --texto-sec: #b3b3b3;
+            --texto-sec: #aaaaaa;
         }
 
         body { 
@@ -20,50 +20,29 @@
             font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; 
             margin: 0; 
             padding-bottom: 120px; 
-            overflow-x: hidden;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        /* FONDO DE ONDAS ANIMADAS */
-        .bg-waves {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -2;
-            background: linear-gradient(135deg, #000 0%, #001a03 50%, #000 100%);
-            overflow: hidden;
-        }
-
-        .wave {
-            position: absolute;
-            width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(0, 77, 9, 0.15) 0%, transparent 70%);
-            top: -50%; left: -50%;
-            animation: moveWaves 20s infinite alternate linear;
-        }
-
-        @keyframes moveWaves {
-            from { transform: rotate(0deg) scale(1); }
-            to { transform: rotate(360deg) scale(1.2); }
-        }
-
-        /* FONDO DINÁMICO DEL ÁLBUM */
         #bg-album-blur {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
-            opacity: 0.4;
-            filter: blur(80px);
-            transition: background 1s ease-in-out;
+            opacity: 0.35;
+            filter: blur(40px);
+            transition: background 0.8s ease;
             background-size: cover;
             background-position: center;
         }
 
         header { 
-            padding: 60px 40px 30px; 
-            background: linear-gradient(to bottom, rgba(0,77,9,0.2), transparent);
+            padding: 50px 40px 20px; 
+            background: linear-gradient(to bottom, rgba(0,77,9,0.3), transparent);
         }
 
-        h1 { font-size: 2.5rem; letter-spacing: -1px; margin: 0; }
+        .header-title { display: flex; align-items: baseline; gap: 15px; flex-wrap: wrap; }
+        h1 { font-size: 2.8rem; letter-spacing: -1px; margin: 0; font-weight: 800; }
+        .subtitle { font-size: 1rem; opacity: 0.7; font-weight: 400; }
 
         .grid { 
             display: grid; 
@@ -72,64 +51,50 @@
             padding: 20px 40px; 
         }
 
-        /* TARJETAS ESTILO GLASS */
         .card { 
             background: var(--tarjeta); 
-            padding: 18px; 
-            border-radius: 15px; 
+            padding: 20px; 
+            border-radius: 12px; 
             cursor: pointer; 
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            border: 1px solid rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
+            transition: all 0.3s ease; 
+            border: 1px solid rgba(255,255,255,0.03);
+            backdrop-filter: blur(5px);
         }
 
         .card:hover { 
-            background: rgba(255, 255, 255, 0.1); 
-            transform: translateY(-10px);
-            border-color: var(--primary);
-            box-shadow: 0 10px 30px rgba(0,77,9,0.3);
+            background: rgba(255, 255, 255, 0.12); 
+            transform: translateY(-8px);
+            border-color: var(--primary-light);
         }
 
-        .card img { 
-            width: 100%; aspect-ratio: 1; border-radius: 10px; 
-            object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.4); 
-        }
+        .card img { width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: cover; }
+        .card-tit { margin-top: 15px; font-weight: 700; font-size: 1.05rem; }
+        .card-art { color: var(--texto-sec); font-size: 0.85rem; margin-top: 4px; }
 
-        .card-tit { margin-top: 15px; font-weight: 700; font-size: 1rem; }
-        .card-art { color: var(--texto-sec); font-size: 0.85rem; margin-top: 5px; }
-
-        /* VISTA DETALLE ÁLBUM */
         #vista-album { 
             display: none; position: fixed; inset: 0; 
-            background: rgba(0,0,0,0.9); z-index: 100; 
+            background: rgba(0,0,0,0.85); z-index: 100; 
             overflow-y: auto; padding: 60px 40px;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(25px);
         }
 
         .btn-back {
-            background: linear-gradient(45deg, var(--primary), var(--primary-light));
-            border: none; color: #fff; padding: 10px 25px; 
-            border-radius: 30px; cursor: pointer; font-weight: bold;
+            background: var(--primary);
+            border: none; color: #fff; padding: 12px 28px; 
+            border-radius: 50px; cursor: pointer; font-weight: 700;
             margin-bottom: 30px; transition: 0.3s;
         }
 
-        .btn-back:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(0,77,9,0.5); }
+        .song-item { display: flex; align-items: center; padding: 14px; border-radius: 10px; cursor: pointer; }
+        .song-item:hover { background: rgba(255,255,255,0.08); }
 
-        .song-item { 
-            display: flex; align-items: center; padding: 12px; 
-            border-radius: 10px; cursor: pointer; transition: 0.2s;
-            margin-bottom: 5px;
-        }
-        .song-item:hover { background: rgba(255,255,255,0.1); }
-        .song-item.active { color: var(--primary-light); background: rgba(0,77,9,0.1); }
-
-        /* REPRODUCCTOR ESTILO MODERN CON IMAGEN PERSONALIZADA */
+        /* REPRODUCTOR MEJORADO */
         .player { 
             position: fixed; bottom: 25px; left: 50%;
             transform: translateX(-50%);
             width: 92%; max-width: 900px;
             background: rgba(18, 18, 18, 0.95); 
-            backdrop-filter: blur(15px);
+            backdrop-filter: blur(20px);
             padding: 12px 25px; 
             display: flex; align-items: center; justify-content: space-between; 
             border-radius: 100px; 
@@ -141,7 +106,7 @@
         .p-info { display: flex; align-items: center; width: 30%; }
         .p-info img { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; border: 2px solid var(--primary); object-fit: cover; }
 
-        .p-controls { display: flex; align-items: center; gap: 20px; width: 60%; }
+        .p-controls { display: flex; align-items: center; gap: 20px; }
         
         .control-btn {
             background: none; border: none; color: white; cursor: pointer;
@@ -157,101 +122,59 @@
         }
         .play-main:hover { background: var(--primary-light); color: white; }
 
-        /* Barra de progreso con imagen personalizada para el circulito (thumb) */
-        input[type="range"]#progress-bar {
-            flex: 1;
-            -webkit-appearance: none;
-            background: rgba(255,255,255,0.2);
-            height: 6px;
-            border-radius: 3px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        /* Estilo para el circulito (thumb) - Webkit (Chrome, Edge, Safari) */
-        input[type="range"]#progress-bar::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            background-image: url('image_7.png');
-            background-size: cover;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-
-        /* Estilo para el circulito (thumb) - Firefox */
-        input[type="range"]#progress-bar::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background-image: url('image_7.png');
-            background-size: cover;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-
-        /* Estilo para la parte ya reproducida - Webkit */
-        input[type="range"]#progress-bar::-webkit-slider-runnable-track {
-            background: linear-gradient(to right, var(--primary) 0%, var(--primary) var(--progress), rgba(255,255,255,0.2) var(--progress), rgba(255,255,255,0.2) 100%);
-            height: 6px;
-            border-radius: 3px;
-        }
-
-        audio { display: none; } /* Ocultamos el nativo */
-
-        /* Scrollbar personalizada */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+        audio { display: none; } /* Ocultamos el nativo para usar nuestros botones */
 
     </style>
 </head>
 <body>
 
-    <div class="bg-waves"><div class="wave"></div></div>
     <div id="bg-album-blur"></div>
 
     <div id="main-view">
-        <header><h1>Mis Álbumes</h1></header>
+        <header>
+            <div class="header-title">
+                <h1>Bondiolas Music</h1>
+                <span class="subtitle">Bienvenido a la biblioteca de Bondiolas</span>
+            </div>
+        </header>
         <div class="grid" id="grid-albumes"></div>
     </div>
 
     <div id="vista-album">
-        <button class="btn-back" onclick="cerrarAlbum()">← Volver a la biblioteca</button>
+        <button class="btn-back" onclick="cerrarAlbum()">← Volver</button>
         <div style="display:flex; gap:40px; align-items:flex-end; margin-bottom:40px; flex-wrap: wrap;">
-            <img id="alb-img" src="" style="width:250px; height:250px; border-radius:15px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+            <img id="alb-img" src="" style="width:240px; height:240px; border-radius:15px; box-shadow: 0 20px 50px rgba(0,0,0,0.7);">
             <div>
-                <span style="text-transform:uppercase; font-size:0.8rem; font-weight:800; color:var(--primary-light)">Álbum</span>
-                <h2 id="alb-tit" style="font-size:4rem; margin:10px 0;"></h2>
-                <p id="alb-art" style="font-size:1.2rem; font-weight:500; opacity:0.8;"></p>
+                <span style="text-transform:uppercase; font-size:0.75rem; font-weight:900; color:var(--primary-light); letter-spacing: 2px;">Álbum</span>
+                <h2 id="alb-tit" style="font-size:3.5rem; margin:5px 0 15px 0; line-height: 1;"></h2>
+                <p id="alb-art" style="font-size:1.3rem; margin:0; opacity:0.9;"></p>
             </div>
         </div>
-        <div id="lista-canciones" style="max-width: 800px;"></div>
+        <div id="lista-canciones" style="max-width: 850px; margin-top: 20px;"></div>
     </div>
 
     <div class="player">
         <div class="p-info">
-            <img id="p-img" src="">
+            <img id="p-img" src="https://via.placeholder.com/50">
             <div style="overflow: hidden;">
-                <div id="p-tit" style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Selecciona algo</div>
-                <div id="p-art" style="color:var(--texto-sec); font-size:0.8rem;">-</div>
+                <div id="p-tit" style="font-weight:700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.95rem;">Selecciona una canción</div>
+                <div id="p-art" style="color:var(--texto-sec); font-size:0.8rem;">Bondiolas Music</div>
             </div>
         </div>
 
         <div class="p-controls">
-            <button class="control-btn play-main" id="btn-play" onclick="togglePlay()">
-                <span id="play-icon">▶</span>
-            </button>
-            
-            <input type="range" id="progress-bar" value="0" min="0" max="100" step="0.1" oninput="changeProgress(this.value)">
-
             <button class="control-btn" id="btn-loop" onclick="toggleLoop()" title="Repetir (Bucle)">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
             </button>
+            
+            <button class="control-btn play-main" id="btn-play" onclick="togglePlay()">
+                <span id="play-icon">▶</span>
+            </button>
         </div>
 
-        <div style="width:10%;"></div>
+        <div style="width:30%; text-align: right; font-size: 0.8rem; opacity: 0.5;">
+            [Espacio] para Pausa
+        </div>
 
         <audio id="main-audio"></audio>
     </div>
@@ -264,7 +187,6 @@
         const audio = document.getElementById('main-audio');
         const playIcon = document.getElementById('play-icon');
         const btnLoop = document.getElementById('btn-loop');
-        const progressBar = document.getElementById('progress-bar');
 
         function limpiar(url, esAudio = false) {
             if (!url) return "";
@@ -281,7 +203,6 @@
                 const [resA, resC] = await Promise.all([fetch(URL_ALB), fetch(URL_CAN)]);
                 albumes = (await resA.text()).split(/\r?\n/).slice(1).filter(l => l.trim()).map(l => l.split('\t'));
                 canciones = (await resC.text()).split(/\r?\n/).slice(1).filter(l => l.trim()).map(l => l.split('\t'));
-
                 const grid = document.getElementById('grid-albumes');
                 grid.innerHTML = '';
                 albumes.forEach(a => {
@@ -292,7 +213,7 @@
                             <div class="card-art">${a[2]}</div>
                         </div>`;
                 });
-            } catch (e) { console.error("Error cargando datos"); }
+            } catch (e) { console.error("Error"); }
         }
 
         function verAlbum(id) {
@@ -301,24 +222,21 @@
             document.getElementById('alb-img').src = limpiar(alb[3]);
             document.getElementById('alb-tit').innerText = alb[1];
             document.getElementById('alb-art').innerText = alb[2];
-            
             const lista = document.getElementById('lista-canciones');
             lista.innerHTML = '';
             cans.forEach((c, i) => {
                 const tit = c[1].replace(/'/g, "\\'");
                 const art = alb[2].replace(/'/g, "\\'");
-                const img = alb[3];
                 lista.innerHTML += `
-                    <div class="song-item" onclick="sonar('${tit}', '${art}', '${c[2]}', '${img}')">
-                        <div style="width:40px; opacity:0.5; font-size:0.9rem;">${String(i+1).padStart(2, '0')}</div>
+                    <div class="song-item" onclick="sonar('${tit}', '${art}', '${c[2]}', '${alb[3]}')">
+                        <div style="width:40px; opacity:0.4; font-weight:bold;">${i+1}</div>
                         <div style="flex:1;">
                             <div style="font-weight:600;">${c[1]}</div>
-                            <div style="font-size:0.8rem; opacity:0.6;">${alb[2]}</div>
+                            <div style="font-size:0.8rem; color:var(--texto-sec);">${alb[2]}</div>
                         </div>
                     </div>`;
             });
             document.getElementById('vista-album').style.display = 'block';
-            document.getElementById('vista-album').scrollTo(0,0);
         }
 
         function sonar(t, art, url, img) {
@@ -326,18 +244,14 @@
             document.getElementById('p-art').innerText = art;
             const imgFinal = limpiar(img);
             document.getElementById('p-img').src = imgFinal;
-            
             document.getElementById('bg-album-blur').style.backgroundImage = `url('${imgFinal}')`;
             
-            audio.pause();
             audio.src = limpiar(url, true);
-            audio.load();
-            progressBar.value = 0; // Reset barra al cambiar canción
-            audio.play().catch(e => console.log("Error de reproducción"));
-            playIcon.innerText = "||";
+            audio.play();
+            playIcon.innerText = "||"; // Cambia a pausa al iniciar
         }
 
-        // --- CONTROLES DE REPRODUCCIÓN ---
+        // --- CONTROLES NUEVOS ---
 
         function togglePlay() {
             if (audio.paused) {
@@ -354,38 +268,18 @@
             btnLoop.classList.toggle('active');
         }
 
-        // Barra de progreso interactiva
-        function changeProgress(value) {
-            if (audio.duration) {
-                const newTime = (value / 100) * audio.duration;
-                audio.currentTime = newTime;
-            }
-        }
-
-        // Actualizar barra de progreso mientras suena
-        audio.ontimeupdate = () => {
-            if (audio.duration) {
-                const percentage = (audio.currentTime / audio.duration) * 100;
-                progressBar.value = percentage;
-                progressBar.style.setProperty('--progress', `${percentage}%`);
-            }
-        };
-
-        // Atajo de teclado (Espacio)
+        // Control por teclado (Espacio)
         window.addEventListener('keydown', (e) => {
             if (e.code === "Space") {
-                e.preventDefault();
+                e.preventDefault(); // Evita que la página baje al presionar espacio
                 togglePlay();
             }
         });
 
-        // Icono al terminar
+        // Actualizar icono si la música termina y no hay bucle
         audio.onended = () => { if(!audio.loop) playIcon.innerText = "▶"; };
 
-        function cerrarAlbum() { 
-            document.getElementById('vista-album').style.display = 'none'; 
-        }
-
+        function cerrarAlbum() { document.getElementById('vista-album').style.display = 'none'; }
         init();
     </script>
 </body>
