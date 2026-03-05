@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bondiolas Music | Biblioteca</title>
+    <title>Bondiolas Music | Premium</title>
     <style>
         :root { 
             --primary: #004D09; 
-            --primary-light: #007a0e;
-            --fondo: #080808; 
+            --primary-light: #008f11;
+            --fondo: #050505; 
             --tarjeta: rgba(255, 255, 255, 0.05); 
             --texto: #ffffff; 
-            --texto-sec: #b0b0b0;
+            --texto-sec: #b3b3b3;
         }
 
         body { 
@@ -19,183 +19,173 @@
             color: var(--texto); 
             font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; 
             margin: 0; 
-            padding-bottom: 140px; 
-            min-height: 100vh;
+            padding-bottom: 120px; 
             overflow-x: hidden;
+            min-height: 100vh;
         }
 
-        /* FONDO DINÁMICO (DESENFOQUE REDUCIDO) */
+        /* FONDO DE ONDAS ANIMADAS */
+        .bg-waves {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+            background: linear-gradient(135deg, #000 0%, #001a03 50%, #000 100%);
+            overflow: hidden;
+        }
+
+        .wave {
+            position: absolute;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(0, 77, 9, 0.15) 0%, transparent 70%);
+            top: -50%; left: -50%;
+            animation: moveWaves 20s infinite alternate linear;
+        }
+
+        @keyframes moveWaves {
+            from { transform: rotate(0deg) scale(1); }
+            to { transform: rotate(360deg) scale(1.2); }
+        }
+
+        /* FONDO DINÁMICO DEL ÁLBUM */
         #bg-album-blur {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
             opacity: 0.4;
-            filter: blur(15px); /* Desenfoque bajo para que se note la portada */
-            transition: background 1s ease;
+            filter: blur(80px);
+            transition: background 1s ease-in-out;
             background-size: cover;
             background-position: center;
         }
 
         header { 
-            padding: 50px 40px 30px; 
-            background: linear-gradient(to bottom, rgba(0,77,9,0.3), transparent);
+            padding: 60px 40px 30px; 
+            background: linear-gradient(to bottom, rgba(0,77,9,0.2), transparent);
         }
 
-        .header-title { display: flex; align-items: baseline; gap: 15px; }
-        h1 { font-size: 2.8rem; letter-spacing: -1.5px; margin: 0; font-weight: 800; }
-        .subtitle { font-size: 1rem; opacity: 0.6; font-weight: 400; }
+        h1 { font-size: 2.5rem; letter-spacing: -1px; margin: 0; }
 
         .grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
             gap: 25px; 
-            padding: 0 40px; 
+            padding: 20px 40px; 
         }
 
+        /* TARJETAS ESTILO GLASS */
         .card { 
             background: var(--tarjeta); 
             padding: 18px; 
-            border-radius: 12px; 
+            border-radius: 15px; 
             cursor: pointer; 
-            transition: 0.3s; 
-            border: 1px solid rgba(255,255,255,0.03);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            border: 1px solid rgba(255,255,255,0.05);
             backdrop-filter: blur(10px);
         }
 
         .card:hover { 
             background: rgba(255, 255, 255, 0.1); 
-            transform: translateY(-5px);
+            transform: translateY(-10px);
             border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(0,77,9,0.3);
         }
 
-        .card img { width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: cover; }
-        .card-tit { margin-top: 12px; font-weight: 700; font-size: 1rem; }
-        .card-art { color: var(--texto-sec); font-size: 0.85rem; }
+        .card img { 
+            width: 100%; aspect-ratio: 1; border-radius: 10px; 
+            object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.4); 
+        }
+
+        .card-tit { margin-top: 15px; font-weight: 700; font-size: 1rem; }
+        .card-art { color: var(--texto-sec); font-size: 0.85rem; margin-top: 5px; }
 
         /* VISTA DETALLE ÁLBUM */
         #vista-album { 
             display: none; position: fixed; inset: 0; 
-            background: rgba(0,0,0,0.8); z-index: 100; 
+            background: rgba(0,0,0,0.9); z-index: 100; 
             overflow-y: auto; padding: 60px 40px;
             backdrop-filter: blur(20px);
         }
 
         .btn-back {
-            background: var(--primary);
+            background: linear-gradient(45deg, var(--primary), var(--primary-light));
             border: none; color: #fff; padding: 10px 25px; 
-            border-radius: 30px; cursor: pointer; font-weight: 700;
-            margin-bottom: 30px; transition: 0.2s;
+            border-radius: 30px; cursor: pointer; font-weight: bold;
+            margin-bottom: 30px; transition: 0.3s;
         }
-        .btn-back:hover { transform: scale(1.05); background: var(--primary-light); }
+
+        .btn-back:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(0,77,9,0.5); }
 
         .song-item { 
             display: flex; align-items: center; padding: 12px; 
-            border-radius: 8px; cursor: pointer; transition: 0.2s;
+            border-radius: 10px; cursor: pointer; transition: 0.2s;
+            margin-bottom: 5px;
         }
         .song-item:hover { background: rgba(255,255,255,0.1); }
+        .song-item.active { color: var(--primary-light); background: rgba(0,77,9,0.1); }
 
-        /* NUEVO REPRODUCTOR CUSTOM */
-        .player-bar { 
+        /* PLAYER BAR */
+        .player { 
             position: fixed; bottom: 20px; left: 50%;
             transform: translateX(-50%);
-            width: 95%; max-width: 1000px;
-            background: rgba(15, 15, 15, 0.9); 
+            width: 90%; max-width: 1000px;
+            background: rgba(20, 20, 20, 0.85); 
             backdrop-filter: blur(20px);
-            padding: 15px 25px; 
-            display: flex; align-items: center; 
+            padding: 15px 30px; 
+            display: flex; align-items: center; justify-content: space-between; 
             border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             z-index: 1000;
         }
 
-        .p-info { display: flex; align-items: center; width: 30%; min-width: 200px; }
-        .p-info img { width: 55px; height: 55px; border-radius: 8px; margin-right: 15px; border: 1px solid var(--primary); }
-        .p-txt { overflow: hidden; }
-        .p-txt div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        .p-controls { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .p-buttons { display: flex; align-items: center; gap: 20px; }
+        .p-info { display: flex; align-items: center; width: 30%; }
+        .p-info img { width: 55px; height: 55px; border-radius: 8px; margin-right: 15px; background: #222; }
         
-        .play-btn {
-            background: var(--primary);
-            border: none; width: 45px; height: 45px;
-            border-radius: 50%; color: white;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; transition: 0.2s;
-        }
-        .play-btn:hover { transform: scale(1.1); background: var(--primary-light); }
-
-        .progress-container { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 500px; }
-        .time-txt { font-size: 0.75rem; color: var(--texto-sec); width: 35px; }
-        
-        input[type="range"] {
-            flex: 1; height: 4px; cursor: pointer;
-            accent-color: var(--primary-light);
-            background: rgba(255,255,255,0.1);
-            border-radius: 5px;
+        audio { 
+            width: 50%; 
+            filter: invert(100%) hue-rotate(100deg) brightness(1.5); 
         }
 
-        .volume-container { width: 15%; display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
-
-        /* Estilo Scroll */
-        ::-webkit-scrollbar { width: 6px; }
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
     </style>
 </head>
 <body>
 
+    <div class="bg-waves"><div class="wave"></div></div>
     <div id="bg-album-blur"></div>
 
     <div id="main-view">
-        <header>
-            <div class="header-title">
-                <h1>Bondiolas Music</h1>
-                <span class="subtitle">Bienvenido a la biblioteca de Bondiolas</span>
-            </div>
-        </header>
+        <header><h1>Mis Álbumes</h1></header>
         <div class="grid" id="grid-albumes"></div>
     </div>
 
     <div id="vista-album">
-        <button class="btn-back" onclick="cerrarAlbum()">← Volver</button>
+        <button class="btn-back" onclick="cerrarAlbum()">← Volver a la biblioteca</button>
         <div style="display:flex; gap:40px; align-items:flex-end; margin-bottom:40px; flex-wrap: wrap;">
             <img id="alb-img" src="" style="width:250px; height:250px; border-radius:15px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
             <div>
-                <p style="text-transform:uppercase; font-size:0.8rem; font-weight:800; color:var(--primary-light); letter-spacing: 2px; margin-bottom: 5px;">Álbum</p>
-                <h2 id="alb-tit" style="font-size:4rem; margin:0; line-height: 1;"></h2>
-                <p id="alb-art" style="font-size:1.4rem; margin-top:10px; opacity:0.8;"></p>
+                <span style="text-transform:uppercase; font-size:0.8rem; font-weight:800; color:var(--primary-light)">Álbum</span>
+                <h2 id="alb-tit" style="font-size:4rem; margin:10px 0;"></h2>
+                <p id="alb-art" style="font-size:1.2rem; font-weight:500; opacity:0.8;"></p>
             </div>
         </div>
-        <div id="lista-canciones" style="max-width: 900px;"></div>
+        <div id="lista-canciones" style="max-width: 800px;"></div>
     </div>
 
-    <div class="player-bar">
+    <div class="player">
         <div class="p-info">
             <img id="p-img" src="">
-            <div class="p-txt">
-                <div id="p-tit" style="font-weight:700;">Selecciona algo</div>
-                <div id="p-art" style="color:var(--texto-sec); font-size:0.85rem;">Bondiolas Music</div>
+            <div style="overflow: hidden;">
+                <div id="p-tit" style="font-weight:bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Selecciona algo</div>
+                <div id="p-art" style="color:var(--texto-sec); font-size:0.8rem;">-</div>
             </div>
         </div>
-
-        <div class="p-controls">
-            <div class="p-buttons">
-                <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
-            </div>
-            <div class="progress-container">
-                <span class="time-txt" id="currentTime">0:00</span>
-                <input type="range" id="seekSlider" value="0" step="1" oninput="seekAudio()">
-                <span class="time-txt" id="totalTime">0:00</span>
-            </div>
-        </div>
-
-        <div class="volume-container">
-            <span style="font-size: 1rem;">🔈</span>
-            <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1" oninput="changeVolume()" style="width: 70px;">
-        </div>
-
-        <audio id="main-audio"></audio>
+        <audio id="main-audio" controls></audio>
+        <div style="width:10%;"></div>
     </div>
 
     <script>
@@ -203,16 +193,18 @@
         const URL_CAN = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=92592278&single=true&output=tsv";
 
         let albumes = [], canciones = [];
-        const audio = document.getElementById('main-audio');
-        const playBtn = document.getElementById('playBtn');
-        const seekSlider = document.getElementById('seekSlider');
-        const currentTimeTxt = document.getElementById('currentTime');
-        const totalTimeTxt = document.getElementById('totalTime');
 
-        function formatTime(seconds) {
-            const min = Math.floor(seconds / 60);
-            const sec = Math.floor(seconds % 60);
-            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        function limpiar(url, esAudio = false) {
+            if (!url) return "";
+            // Si el link ya es de GitHub o descarga directa, lo devolvemos tal cual
+            if (url.includes('github') || url.includes('raw')) return url.trim();
+            
+            const match = url.match(/(?:id=|\/d\/)([\w-]+)/);
+            const id = match ? match[1] : url.trim();
+            
+            return esAudio 
+                ? `https://docs.google.com/uc?export=media&id=${id}`
+                : `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
         }
 
         async function init() {
@@ -224,19 +216,63 @@
                 const grid = document.getElementById('grid-albumes');
                 grid.innerHTML = '';
                 albumes.forEach(a => {
-                    const id = a[0].trim();
-                    const img = a[3].trim();
                     grid.innerHTML += `
-                        <div class="card" onclick="verAlbum('${id}')">
-                            <img src="${img}">
+                        <div class="card" onclick="verAlbum('${a[0].trim()}')">
+                            <img src="${limpiar(a[3])}">
                             <div class="card-tit">${a[1]}</div>
                             <div class="card-art">${a[2]}</div>
                         </div>`;
                 });
-            } catch (e) { console.error("Error cargando base"); }
+            } catch (e) { console.error("Error cargando datos"); }
         }
 
         function verAlbum(id) {
             const alb = albumes.find(a => a[0].trim() == id.trim());
             const cans = canciones.filter(c => c[0].trim() == id.trim());
-            document.getElementById('alb-img').src = alb[3];
+            document.getElementById('alb-img').src = limpiar(alb[3]);
+            document.getElementById('alb-tit').innerText = alb[1];
+            document.getElementById('alb-art').innerText = alb[2];
+            
+            const lista = document.getElementById('lista-canciones');
+            lista.innerHTML = '';
+            cans.forEach((c, i) => {
+                const tit = c[1].replace(/'/g, "\\'");
+                const art = alb[2].replace(/'/g, "\\'");
+                const img = alb[3];
+                lista.innerHTML += `
+                    <div class="song-item" onclick="sonar('${tit}', '${art}', '${c[2]}', '${img}')">
+                        <div style="width:40px; opacity:0.5; font-size:0.9rem;">${String(i+1).padStart(2, '0')}</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:600;">${c[1]}</div>
+                            <div style="font-size:0.8rem; opacity:0.6;">${alb[2]}</div>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('vista-album').style.display = 'block';
+            document.getElementById('vista-album').scrollTo(0,0);
+        }
+
+        function sonar(t, art, url, img) {
+            document.getElementById('p-tit').innerText = t;
+            document.getElementById('p-art').innerText = art;
+            const imgFinal = limpiar(img);
+            document.getElementById('p-img').src = imgFinal;
+            
+            // EFECTO FONDO DINÁMICO
+            document.getElementById('bg-album-blur').style.backgroundImage = `url('${imgFinal}')`;
+            
+            const audio = document.getElementById('main-audio');
+            audio.pause();
+            audio.src = limpiar(url, true);
+            audio.load();
+            audio.play().catch(e => console.log("Error de reproducción"));
+        }
+
+        function cerrarAlbum() { 
+            document.getElementById('vista-album').style.display = 'none'; 
+        }
+
+        init();
+    </script>
+</body>
+</html>
