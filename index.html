@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bondiolas Music</title>
+    <title>Bondiolas Music | Premium Player</title>
     <style>
         :root { 
             --primary: #004D09; 
@@ -19,7 +19,7 @@
             color: var(--texto); 
             font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; 
             margin: 0; 
-            padding-bottom: 120px; 
+            padding-bottom: 140px; /* Espacio extra para el player */
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -88,41 +88,117 @@
         .song-item { display: flex; align-items: center; padding: 14px; border-radius: 10px; cursor: pointer; }
         .song-item:hover { background: rgba(255,255,255,0.08); }
 
-        /* REPRODUCTOR MEJORADO */
+        /* --- REPRODUCTOR PREMIUM ACTUALIZADO --- */
         .player { 
             position: fixed; bottom: 25px; left: 50%;
             transform: translateX(-50%);
             width: 92%; max-width: 900px;
             background: rgba(18, 18, 18, 0.95); 
             backdrop-filter: blur(20px);
-            padding: 12px 25px; 
-            display: flex; align-items: center; justify-content: space-between; 
-            border-radius: 100px; 
+            padding: 15px 30px; 
+            display: flex; flex-direction: column; gap: 10px; /* Cambiado a columna para la barra */
+            border-radius: 20px; /* Bordes menos redondeados, más modernos */
             border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 20px 40px rgba(0,0,0,0.6);
             z-index: 1000;
         }
 
-        .p-info { display: flex; align-items: center; width: 30%; }
-        .p-info img { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; border: 2px solid var(--primary); object-fit: cover; }
+        .p-main-content {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%;
+        }
 
-        .p-controls { display: flex; align-items: center; gap: 20px; }
+        .p-info { display: flex; align-items: center; width: 35%; }
+        .p-info img { width: 50px; height: 50px; border-radius: 8px; margin-right: 15px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); }
+
+        .p-controls { display: flex; align-items: center; gap: 15px; }
         
         .control-btn {
             background: none; border: none; color: white; cursor: pointer;
             font-size: 1.2rem; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+            opacity: 0.7; /* Más sutil por defecto */
         }
         
-        .control-btn:hover { color: var(--primary-light); transform: scale(1.1); }
-        .control-btn.active { color: var(--primary-light); text-shadow: 0 0 10px var(--primary); }
+        .control-btn:hover { color: var(--primary-light); transform: scale(1.1); opacity: 1; }
+        .control-btn.active { color: var(--primary-light); text-shadow: 0 0 10px var(--primary); opacity: 1; }
 
+        /* Botón Play/Pause Principal */
         .play-main {
-            background: white; color: black; width: 40px; height: 40px;
-            border-radius: 50%; font-size: 1rem;
+            background: linear-gradient(45deg, var(--primary), var(--primary-light));
+            color: white; width: 45px; height: 45px;
+            border-radius: 50%; font-size: 1.2rem;
+            box-shadow: 0 4px 10px rgba(0, 77, 9, 0.5);
+            border: 2px solid rgba(255,255,255,0.2);
+            opacity: 1;
         }
-        .play-main:hover { background: var(--primary-light); color: white; }
+        .play-main:hover {
+            box-shadow: 0 6px 15px rgba(0, 77, 9, 0.7);
+            background: linear-gradient(45deg, var(--primary-light), var(--primary));
+        }
 
-        audio { display: none; } /* Ocultamos el nativo para usar nuestros botones */
+        /* Ocultar iconos de texto nativos */
+        .p-icon-play, .p-icon-pause { display: none; }
+        
+        /* Mostrar el icono correcto según el estado */
+        .playing .p-icon-pause { display: block; }
+        .paused .p-icon-play { display: block; }
+
+        /* --- BARRA DE PROGRESO PREMIUM --- */
+        .p-progress-container {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+        }
+
+        .time-display {
+            font-size: 0.75rem; color: var(--texto-sec); width: 35px; text-align: center; font-variant-numeric: tabular-nums;
+        }
+
+        .p-progress-bar-wrapper {
+            flex: 1; display: flex; align-items: center; position: relative;
+        }
+
+        input[type="range"]#p-progress-bar {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px; outline: none; cursor: pointer;
+            position: relative; z-index: 1;
+        }
+
+        /* El truco del gradiente dinámico para el llenado (se actualiza en JS) */
+        input[type="range"]#p-progress-bar::-webkit-slider-runnable-track {
+            background: transparent;
+        }
+
+        /* El circulito (Thumb) usando image_7.png */
+        input[type="range"]#p-progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 25px; height: 25px; /* Ajustar tamaño */
+            border-radius: 50%;
+            background: url('image_7.png') no-repeat center center; /* Usar imagen */
+            background-size: cover;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            border: 2px solid white; /* Un borde para integrarlo */
+            margin-top: -9.5px; /* Centrar verticalmente */
+            position: relative; z-index: 2;
+        }
+
+        /* Para Firefox */
+        input[type="range"]#p-progress-bar::-moz-range-thumb {
+            width: 25px; height: 25px;
+            background: url('image_7.png') no-repeat center center;
+            background-size: cover;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        audio { display: none; } /* Oculto */
+
+        /* Estética de scroll */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
     </style>
 </head>
@@ -154,26 +230,34 @@
     </div>
 
     <div class="player">
-        <div class="p-info">
-            <img id="p-img" src="https://via.placeholder.com/50">
-            <div style="overflow: hidden;">
-                <div id="p-tit" style="font-weight:700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.95rem;">Selecciona una canción</div>
-                <div id="p-art" style="color:var(--texto-sec); font-size:0.8rem;">Bondiolas Music</div>
+        <div class="p-main-content">
+            <div class="p-info">
+                <img id="p-img" src="https://via.placeholder.com/50">
+                <div style="overflow: hidden;">
+                    <div id="p-tit" style="font-weight:700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.95rem;">Selecciona una canción</div>
+                    <div id="p-art" style="color:var(--texto-sec); font-size:0.8rem;">Bondiolas Music</div>
+                </div>
             </div>
-        </div>
 
-        <div class="p-controls">
-            <button class="control-btn" id="btn-loop" onclick="toggleLoop()" title="Repetir (Bucle)">
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
-            </button>
-            
-            <button class="control-btn play-main" id="btn-play" onclick="togglePlay()">
-                <span id="play-icon">▶</span>
-            </button>
-        </div>
+            <div class="p-controls">
+                <button class="control-btn" id="btn-loop" onclick="toggleLoop()" title="Repetir (Bucle)">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+                </button>
+                
+                <button class="control-btn play-main paused" id="btn-play" onclick="togglePlay()">
+                    <svg class="p-icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <svg class="p-icon-pause" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+            </div>
 
-        <div style="width:30%; text-align: right; font-size: 0.8rem; opacity: 0.5;">
-            [Espacio] para Pausa
+            <div style="width:30%;"></div> </div>
+
+        <div class="p-progress-container">
+            <span id="current-time" class="time-display">0:00</span>
+            <div class="p-progress-bar-wrapper">
+                <input type="range" id="p-progress-bar" min="0" max="0" value="0">
+            </div>
+            <span id="total-duration" class="time-display">0:00</span>
         </div>
 
         <audio id="main-audio"></audio>
@@ -185,8 +269,11 @@
 
         let albumes = [], canciones = [];
         const audio = document.getElementById('main-audio');
-        const playIcon = document.getElementById('play-icon');
+        const btnPlay = document.getElementById('btn-play');
         const btnLoop = document.getElementById('btn-loop');
+        const currentTimeDisplay = document.getElementById('current-time');
+        const totalDurationDisplay = document.getElementById('total-duration');
+        const progressBar = document.getElementById('p-progress-bar');
 
         function limpiar(url, esAudio = false) {
             if (!url) return "";
@@ -213,7 +300,7 @@
                             <div class="card-art">${a[2]}</div>
                         </div>`;
                 });
-            } catch (e) { console.error("Error"); }
+            } catch (e) { console.error("Error cargando base de datos"); }
         }
 
         function verAlbum(id) {
@@ -237,6 +324,7 @@
                     </div>`;
             });
             document.getElementById('vista-album').style.display = 'block';
+            document.getElementById('vista-album').scrollTo(0,0);
         }
 
         function sonar(t, art, url, img) {
@@ -244,22 +332,35 @@
             document.getElementById('p-art').innerText = art;
             const imgFinal = limpiar(img);
             document.getElementById('p-img').src = imgFinal;
+            
+            // CAMBIO DE FONDO DINÁMICO
             document.getElementById('bg-album-blur').style.backgroundImage = `url('${imgFinal}')`;
             
             audio.src = limpiar(url, true);
-            audio.play();
-            playIcon.innerText = "||"; // Cambia a pausa al iniciar
+            
+            // Reset de barra y tiempos antes de reproducir
+            currentTimeDisplay.innerText = "0:00";
+            progressBar.value = 0;
+            progressBar.style.background = `linear-gradient(to right, var(--primary-light) 0%, rgba(255, 255, 255, 0.1) 0%)`;
+            
+            audio.play().then(() => {
+                // Actualizar icono al iniciar
+                btnPlay.classList.remove('paused');
+                btnPlay.classList.add('playing');
+            }).catch(e => console.log("Play bloqueado por navegador"));
         }
 
-        // --- CONTROLES NUEVOS ---
+        // --- CONTROLES Y BARRA DE PROGRESO ACTUALIZADOS ---
 
         function togglePlay() {
             if (audio.paused) {
                 audio.play();
-                playIcon.innerText = "||";
+                btnPlay.classList.remove('paused');
+                btnPlay.classList.add('playing');
             } else {
                 audio.pause();
-                playIcon.innerText = "▶";
+                btnPlay.classList.remove('playing');
+                btnPlay.classList.add('paused');
             }
         }
 
@@ -268,18 +369,68 @@
             btnLoop.classList.toggle('active');
         }
 
-        // Control por teclado (Espacio)
+        // Función auxiliar para formatear tiempo (m:ss)
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // Actualizar barra y tiempo actual durante la reproducción
+        audio.ontimeupdate = () => {
+            if (!isNaN(audio.duration)) {
+                currentTimeDisplay.innerText = formatTime(audio.currentTime);
+                progressBar.value = audio.currentTime;
+                
+                // Efecto de llenado dinámico de la barra
+                const value = (progressBar.value - progressBar.min) / (progressBar.max - progressBar.min) * 100;
+                progressBar.style.background = `linear-gradient(to right, var(--primary-light) 0%, var(--primary-light) ${value}%, rgba(255, 255, 255, 0.1) ${value}%, rgba(255, 255, 255, 0.1) 100%)`;
+            }
+        };
+
+        // Obtener y mostrar duración total cuando carga la canción
+        audio.onloadedmetadata = () => {
+            if (!isNaN(audio.duration)) {
+                totalDurationDisplay.innerText = formatTime(audio.duration);
+                progressBar.max = audio.duration;
+            }
+        };
+
+        // Permitir que el usuario busque en la canción arrastrando la barra
+        progressBar.oninput = () => {
+            audio.currentTime = progressBar.value;
+            currentTimeDisplay.innerText = formatTime(progressBar.value);
+            
+            // Actualizar llenado mientras arrastra
+            const value = (progressBar.value - progressBar.min) / (progressBar.max - progressBar.min) * 100;
+            progressBar.style.background = `linear-gradient(to right, var(--primary-light) 0%, var(--primary-light) ${value}%, rgba(255, 255, 255, 0.1) ${value}%, rgba(255, 255, 255, 0.1) 100%)`;
+        };
+
+        // --- TECLA ESPACIO Y FINALIZACIÓN ---
+
+        // Control por teclado (Espacio para Play/Pausa)
         window.addEventListener('keydown', (e) => {
-            if (e.code === "Space") {
-                e.preventDefault(); // Evita que la página baje al presionar espacio
-                togglePlay();
+            // Evitar conflictos si el usuario está en un input (por si acaso agregas uno luego)
+            if (e.target.tagName !== 'INPUT' || e.target.type !== 'range') { 
+                if (e.code === "Space") {
+                    e.preventDefault(); // Evita scroll
+                    togglePlay();
+                }
             }
         });
 
         // Actualizar icono si la música termina y no hay bucle
-        audio.onended = () => { if(!audio.loop) playIcon.innerText = "▶"; };
+        audio.onended = () => { 
+            if(!audio.loop) {
+                btnPlay.classList.remove('playing');
+                btnPlay.classList.add('paused');
+            } 
+        };
 
-        function cerrarAlbum() { document.getElementById('vista-album').style.display = 'none'; }
+        function cerrarAlbum() { 
+            document.getElementById('vista-album').style.display = 'none'; 
+        }
+
         init();
     </script>
 </body>
