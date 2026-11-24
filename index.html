@@ -32,6 +32,14 @@
 
         * { -webkit-tap-highlight-color: transparent; }
 
+        /* Barras de desplazamiento oscuras y finas en toda la página (en vez de la blanca del navegador) */
+        html, .vista { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+        ::-webkit-scrollbar-corner { background: transparent; }
+
         body {
             background: var(--fondo);
             color: var(--texto);
@@ -54,7 +62,13 @@
             background-size: cover;
             background-position: center;
             pointer-events: none;
+            will-change: opacity;
+            transform: translateZ(0);
         }
+
+        /* Lo que queda tapado por una vista abierta deja de dibujarse (ahorra mucho al hacer scroll) */
+        body.vista-abierta #main-view { visibility: hidden; transition: visibility 0s linear 0.35s; }
+        body.album-abierto #vista-artista.open { visibility: hidden; transition: visibility 0s linear 0.35s; }
         #bg-album-blur.fading { opacity: 0; }
 
         /* ---------- ANIMACIONES BASE ---------- */
@@ -70,8 +84,8 @@
             100% { transform: scale(1); }
         }
         @keyframes eq {
-            0%, 100% { height: 3px; }
-            50%      { height: 14px; }
+            0%, 100% { transform: scaleY(0.2); }
+            50%      { transform: scaleY(1); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes playerIn {
@@ -103,11 +117,10 @@
             cursor: pointer;
             transition: transform 0.35s var(--ease), background 0.3s ease, border-color 0.3s ease, box-shadow 0.35s ease;
             border: 1px solid rgba(255,255,255,0.03);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
             animation: fadeUp 0.55s var(--ease) both;
             animation-delay: calc(var(--i, 0) * 45ms);
             outline: none;
+            contain: layout style;
         }
 
         .card:hover, .card:focus-visible {
@@ -159,10 +172,8 @@
         /* ---------- VISTA ÁLBUM ---------- */
         .vista {
             display: block; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.85); z-index: 100;
+            background: rgba(0,0,0,0.86); z-index: 100;
             overflow-y: auto; padding: 60px 40px 160px;
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
             opacity: 0; visibility: hidden; pointer-events: none;
             transition: opacity 0.35s ease, visibility 0.35s;
             overscroll-behavior: contain;
@@ -230,22 +241,21 @@
 
         /* Ecualizador animado en la canción que está sonando */
         .eq { display: none; gap: 2px; align-items: flex-end; height: 14px; }
-        .eq span { width: 3px; height: 3px; border-radius: 1px; background: var(--primary-light); animation: eq 0.9s ease-in-out infinite; }
+        .eq span { width: 3px; height: 14px; border-radius: 1px; background: var(--primary-light); transform-origin: bottom; transform: scaleY(0.2); animation: eq 0.9s ease-in-out infinite; }
         .eq span:nth-child(2) { animation-delay: -0.3s; }
         .eq span:nth-child(3) { animation-delay: -0.6s; }
         .song-item.active .num-txt { display: none; }
         .song-item.active .eq { display: flex; }
-        body.is-paused .eq span { animation-play-state: paused; }
+        body.is-paused .eq span, body.oculta .eq span, body.oculta .sk { animation-play-state: paused; }
 
         /* ---------- REPRODUCTOR ---------- */
         /* Barra pegada abajo, de lado a lado (estilo Spotify) */
         .player {
             position: fixed; bottom: 0; left: 0; right: 0;
             width: 100%;
-            background: rgba(18, 18, 18, 0.97);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(18, 18, 18, 0.98);
             padding: 14px 30px 16px;
+            contain: layout style;
             display: flex; flex-direction: column; gap: 10px;
             border-top: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
@@ -270,6 +280,18 @@
         .control-btn:hover { color: var(--primary-light); transform: scale(1.1); }
         .control-btn:active { transform: scale(0.92); }
         .control-btn.active { color: var(--primary-light); filter: drop-shadow(0 0 6px var(--primary-light)); }
+
+        /* Botón de repetir: "1" chiquito cuando repite la canción */
+        #btn-loop { position: relative; }
+        #btn-loop::after {
+            content: '1'; position: absolute; top: -4px; right: -6px;
+            font-size: 0.6rem; font-weight: 900; line-height: 1;
+            background: var(--play); color: #fff; border-radius: 50%;
+            width: 13px; height: 13px; display: flex; align-items: center; justify-content: center;
+            opacity: 0; transform: scale(0.4); transition: opacity 0.2s, transform 0.25s var(--ease);
+        }
+        #btn-loop.uno::after { opacity: 1; transform: scale(1); }
+        #btn-loop.pop svg { animation: pop 0.3s var(--ease); }
 
         /* Botón de play minimalista: círculo liso, sin bordes ni sombras */
         .play-main {
@@ -302,7 +324,10 @@
 
         input[type="range"]#p-progress-bar {
             -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin: 0;
-            background: linear-gradient(to right, var(--primary-light) var(--progress), rgba(255, 255, 255, 0.1) var(--progress));
+            background: linear-gradient(to right,
+                var(--primary-light) var(--progress),
+                rgba(255, 255, 255, 0.28) var(--progress), rgba(255, 255, 255, 0.28) var(--buffer, 0%),
+                rgba(255, 255, 255, 0.1) var(--buffer, 0%));
             border-radius: 5px; outline: none; cursor: pointer;
             transition: height 0.2s ease;
         }
@@ -338,8 +363,8 @@
         #panel-info {
             position: fixed; top: 0; right: 0; bottom: var(--player-h);
             width: var(--panel-w); box-sizing: border-box;
-            background: rgba(18, 18, 18, 0.97);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(18, 18, 18, 0.98);
+            contain: layout style paint;
             border-left: 1px solid rgba(255,255,255,0.08);
             z-index: 900;
             display: flex; flex-direction: column;
@@ -361,8 +386,9 @@
         .pi-cerrar:hover { color: #fff; background: rgba(255,255,255,0.08); }
 
         .pi-scroll { flex: 1; overflow-y: auto; padding: 10px 20px 30px; overscroll-behavior: contain; }
-        .pi-scroll::-webkit-scrollbar { width: 6px; }
-        .pi-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        /* Panel derecho: sin barra de desplazamiento visible (se sigue pudiendo scrollear) */
+        .pi-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+        .pi-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
         .pi-contenido.pop { animation: fadeUp 0.45s var(--ease); }
 
         #pi-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; display: block; background: rgba(255,255,255,0.04); box-shadow: 0 14px 30px rgba(0,0,0,0.5); transition: opacity 0.4s ease; }
@@ -494,7 +520,7 @@
             </div>
 
             <div class="p-controls">
-                <button class="control-btn" id="btn-loop" onclick="toggleLoop()" title="Repetir">
+                <button class="control-btn" id="btn-loop" onclick="toggleLoop()" title="Repetir: desactivado">
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
                 </button>
                 <button class="control-btn play-main paused" id="btn-play" onclick="togglePlay()" title="Reproducir / Pausar">
@@ -516,7 +542,7 @@
             </div>
             <span id="total-duration" class="time-display">0:00</span>
         </div>
-        <audio id="main-audio" preload="metadata"></audio>
+        <audio id="main-audio" preload="auto"></audio>
     </div>
 
     <script>
@@ -559,13 +585,13 @@
         // Escapa texto para meterlo en HTML sin romper nada (comillas, <, &...)
         const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
 
-        function limpiar(url, esAudio = false) {
+        function limpiar(url, esAudio = false, ancho = 800) {
             if (!url) return "";
             url = url.trim();
             if (url.includes('github') || url.includes('raw')) return url;
             const match = url.match(/(?:id=|\/d\/)([\w-]+)/);
             const id = match ? match[1] : url;
-            return esAudio ? `https://docs.google.com/uc?export=media&id=${id}` : `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+            return esAudio ? `https://docs.google.com/uc?export=media&id=${id}` : `https://drive.google.com/thumbnail?id=${id}&sz=w${ancho}`;
         }
 
         // Cambia una imagen con fade-in, sin recargar si ya es la misma
@@ -607,7 +633,7 @@
         const tarjetaHTML = (a, i) => `
                     <div class="card" tabindex="0" data-id="${esc(a[0].trim())}" style="--i:${Math.min(i, 16)}">
                         <div class="card-cover">
-                            <img class="fade-img" src="${esc(limpiar(a[3]) || PLACEHOLDER)}" alt="" loading="lazy" decoding="async">
+                            <img class="fade-img" src="${esc(limpiar(a[3], false, 400) || PLACEHOLDER)}" alt="" loading="lazy" decoding="async" width="400" height="400">
                             <div class="card-play"><svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
                         </div>
                         <div class="card-tit">${esc(a[1])}</div>
@@ -762,7 +788,9 @@
         const esSoundCloud = url => /soundcloud\.com|snd\.sc/i.test(url || '');
 
         let modo = 'audio';          // 'audio' o 'sc'
-        let repetir = false;
+        // Repetir: 'off' (sigue con la próxima canción / álbum) · 'album' (repite el álbum) · 'cancion' (repite la canción)
+        let modoRepetir = 'off';
+        let reproduciendo = null;   // { alb, cans, i } -> qué álbum y qué canción está sonando
 
         // --- SoundCloud (reproductor oficial invisible, controlado por JS) ---
         let sc = null, scListo = null, scApi = null, scToken = 0;
@@ -817,8 +845,11 @@
                 });
                 sc.bind(E.FINISH, () => {
                     if (modo !== 'sc') return;
-                    if (repetir) { scPos = 0; scT = performance.now(); sc.seekTo(0); sc.play(); }
-                    else { scSonando = false; scPos = scDur; setEstado(false); pintarProgreso(scDur); }
+                    if (modoRepetir === 'cancion') { scPos = 0; scT = performance.now(); sc.seekTo(0); sc.play(); }
+                    else { scSonando = false; scPos = scDur; setEstado(false); pintarProgreso(scDur); alTerminar(); }
+                });
+                sc.bind(E.LOAD_PROGRESS, e => {
+                    if (modo === 'sc' && e && e.loadedProgress != null) progressBar.style.setProperty('--buffer', e.loadedProgress * 100 + '%');
                 });
                 sc.bind(E.PLAY_PROGRESS, e => {
                     if (modo !== 'sc') return;
@@ -868,9 +899,79 @@
             pause() { if (modo === 'sc') { sc && sc.pause(); } else audio.pause(); },
             seek(t) {
                 if (modo === 'sc') { if (!sc) return; sc.seekTo(t * 1000); scPos = t; scT = performance.now(); }
-                else audio.currentTime = t;
+                else seekAudio(t);
             }
         };
+
+        // =====================================================================
+        //  ADELANTAR SIN TRABARSE (audios de Google Drive)
+        //  Drive no deja saltar a una parte que todavía no se descargó: si lo intentás, se traba.
+        //  Solución: si la parte ya está descargada se salta al instante; si no, se espera
+        //  (en silencio) a que se descargue y recién ahí se salta.
+        // =====================================================================
+        let seekPendiente = null;
+        let vigiaId = 0;
+        const esDriveActual = () => /docs\.google\.com|drive\.google\.com|googleusercontent/i.test(audio.currentSrc || audio.src || '');
+
+        // Hasta qué segundo hay audio descargado de corrido desde el principio
+        function finBuffer() {
+            const b = audio.buffered; let fin = 0;
+            for (let i = 0; i < b.length; i++) if (b.start(i) <= fin + 0.5) fin = Math.max(fin, b.end(i));
+            return fin;
+        }
+
+        function pintarBuffer() {
+            const d = audio.duration;
+            if (modo !== 'audio' || !d || !isFinite(d)) return;
+            progressBar.style.setProperty('--buffer', Math.min(100, finBuffer() / d * 100) + '%');
+        }
+
+        function seekAudio(t) {
+            if (!esDriveActual() || t <= finBuffer() - 0.5) {
+                cancelarSeekPendiente();
+                audio.currentTime = t;
+                return;
+            }
+            seekPendiente = t;
+            audio.muted = true;                       // no se escucha el pedazo viejo mientras espera
+            btnPlay.classList.add('loading');
+            ultimoSeg = -1; pintarProgreso(t);
+        }
+
+        function cancelarSeekPendiente() {
+            if (seekPendiente === null) return;
+            seekPendiente = null;
+            audio.muted = false;
+            btnPlay.classList.remove('loading');
+        }
+
+        function revisarSeekPendiente() {
+            pintarBuffer();
+            if (seekPendiente === null) return;
+            const d = audio.duration || 0;
+            if (finBuffer() >= Math.min(seekPendiente + 2, d - 0.3)) {
+                const t = seekPendiente;
+                seekPendiente = null;
+                audio.currentTime = t;
+                audio.muted = false;
+                btnPlay.classList.remove('loading');
+            }
+        }
+
+        // Si igual se queda trabado más de 7 segundos, se recarga y se vuelve al mismo punto
+        function vigilarTrabado() {
+            clearTimeout(vigiaId);
+            if (modo !== 'audio' || !esDriveActual()) return;
+            vigiaId = setTimeout(() => {
+                if (modo !== 'audio' || audio.paused || audio.readyState >= 3) return;
+                const t = seekPendiente ?? audio.currentTime;
+                const src = audio.src;
+                seekPendiente = null;
+                audio.src = src;
+                audio.play().catch(() => {});
+                seekAudio(t);
+            }, 7000);
+        }
 
         function cambiarModo(nuevo) {
             if (modo === 'sc') { scToken++; sc && sc.pause(); scSonando = false; }
@@ -879,6 +980,9 @@
         }
 
         function resetProgreso() {
+            cancelarSeekPendiente();
+            clearTimeout(vigiaId);
+            progressBar.style.setProperty('--buffer', '0%');
             progressBar.max = 0;
             progressBar.value = 0;
             progressBar.style.setProperty('--progress', '0%');
@@ -941,9 +1045,9 @@
             $('p-art').innerHTML = artistasHTML(art);
             reanimar($('p-text'), 'pop');
             const imgF = limpiar(img);
-            setImg(pImg, imgF);
+            setImg(pImg, limpiar(img, false, 120));     // miniatura chica para el reproductor
             reanimar(pImg, 'pop');
-            cambiarFondo(imgF);
+            cambiarFondo(limpiar(img, false, 200));     // el fondo va desenfocado: no necesita calidad
 
             url = (url || '').trim();
             const misma = url === urlSonando;
@@ -983,10 +1087,54 @@
             else motor.pause();
         }
 
+        // Un click: álbum en bucle · otro: canción en bucle · otro: predeterminado
         function toggleLoop() {
-            repetir = !repetir;
-            audio.loop = repetir;
-            $('btn-loop').classList.toggle('active', repetir);
+            modoRepetir = { off: 'album', album: 'cancion', cancion: 'off' }[modoRepetir];
+            audio.loop = modoRepetir === 'cancion';
+            const btn = $('btn-loop');
+            btn.classList.toggle('active', modoRepetir !== 'off');
+            btn.classList.toggle('uno', modoRepetir === 'cancion');
+            btn.title = { off: 'Repetir: desactivado', album: 'Repetir: álbum', cancion: 'Repetir: canción' }[modoRepetir];
+            reanimar(btn, 'pop');
+        }
+
+        // ---------- REPRODUCCIÓN CONTINUA ----------
+        const cancionesDe = alb => canciones.filter(c => c[0].trim() == alb[0].trim());
+        const letraDe = c => colLetra >= 0 ? (c[colLetra] || '') : '';
+
+        function reproducirCancion(alb, cans, i) {
+            const c = cans[i];
+            reproduciendo = { alb, cans, i };
+            sonar(c[1], alb[2], urlDe(c), alb[3], alb, letraDe(c));
+        }
+
+        // Pasa a la siguiente canción que tenga link (saltea las que no se pueden escuchar)
+        function siguiente() {
+            if (!reproduciendo) return;
+            const { alb, cans, i } = reproduciendo;
+
+            // 1) siguiente canción del mismo álbum
+            for (let j = i + 1; j < cans.length; j++) if (urlDe(cans[j])) return reproducirCancion(alb, cans, j);
+
+            // 2) álbum en bucle: vuelve al principio del mismo álbum
+            if (modoRepetir === 'album') {
+                for (let j = 0; j <= i; j++) if (urlDe(cans[j])) return reproducirCancion(alb, cans, j);
+                return;
+            }
+
+            // 3) predeterminado: siguiente álbum (y después del último, el primero)
+            const inicio = albumes.indexOf(alb);
+            for (let k = 1; k <= albumes.length; k++) {
+                const a = albumes[(inicio + k) % albumes.length];
+                const cs = cancionesDe(a);
+                const j = cs.findIndex(c => urlDe(c));
+                if (j !== -1) return reproducirCancion(a, cs, j);
+            }
+        }
+
+        function alTerminar() {
+            if (modoRepetir === 'cancion') return;   // (ya se repite sola)
+            setTimeout(siguiente, 300);             // pequeña pausa entre canciones
         }
 
         // El estado del botón sigue al audio real (no se desincroniza nunca)
@@ -1003,26 +1151,33 @@
         const enAudio = (ev, fn) => audio.addEventListener(ev, e => { if (modo === 'audio') fn(e); });
         enAudio('play', () => setEstado(true));
         enAudio('pause', () => setEstado(false));
-        enAudio('ended', () => setEstado(false));
+        enAudio('ended', () => { setEstado(false); alTerminar(); });
         enAudio('waiting', () => btnPlay.classList.add('loading'));
         enAudio('loadstart', () => btnPlay.classList.add('loading'));
-        ['playing', 'canplay', 'pause', 'error'].forEach(ev => enAudio(ev, () => btnPlay.classList.remove('loading')));
+        ['playing', 'canplay', 'pause', 'error'].forEach(ev => enAudio(ev, () => { if (seekPendiente === null) btnPlay.classList.remove('loading'); }));
 
         // Barra de progreso fluida a 60fps
-        let ultimoSeg = -1;
+        let ultimoSeg = -1, ultimoPct = -1;
         function pintarProgreso(t) {
             const d = motor.duracion;
             if (!d || isNaN(d)) return;
-            progressBar.value = t;
-            progressBar.style.setProperty('--progress', (t / d) * 100 + '%');
+            const pct = Math.round((t / d) * 2000) / 20;   // pasos de 0,05% (menos de 1 píxel)
+            if (pct !== ultimoPct || ultimoSeg === -1) {
+                ultimoPct = pct;
+                progressBar.value = t;
+                progressBar.style.setProperty('--progress', pct + '%');
+            }
             const s = Math.floor(t);
             if (s !== ultimoSeg) { ultimoSeg = s; tActual.innerText = formatTime(t); }
         }
         function loopProgreso() {
-            if (!arrastrando) pintarProgreso(motor.tiempo);
+            if (!arrastrando) pintarProgreso(seekPendiente ?? motor.tiempo);
             if (!motor.pausado) rafId = requestAnimationFrame(loopProgreso);
         }
-        enAudio('timeupdate', () => { if (audio.paused && !arrastrando) pintarProgreso(audio.currentTime); });
+        enAudio('timeupdate', () => { revisarSeekPendiente(); if (audio.paused && !arrastrando) pintarProgreso(seekPendiente ?? audio.currentTime); });
+        enAudio('progress', revisarSeekPendiente);
+        enAudio('waiting', vigilarTrabado);
+        ['playing', 'pause', 'seeked', 'canplaythrough'].forEach(ev => enAudio(ev, () => { if (ev !== 'seeked' || audio.readyState >= 3) clearTimeout(vigiaId); }));
         enAudio('loadedmetadata', () => { progressBar.max = audio.duration; tTotal.innerText = formatTime(audio.duration); ultimoSeg = -1; });
 
         // Mientras arrastrás solo se mueve la barra; el salto real se hace al soltar
@@ -1054,6 +1209,7 @@
         if ('mediaSession' in navigator) {
             navigator.mediaSession.setActionHandler('play', () => motor.play());
             navigator.mediaSession.setActionHandler('pause', () => motor.pause());
+            try { navigator.mediaSession.setActionHandler('nexttrack', () => siguiente()); } catch (_) {}
             try { navigator.mediaSession.setActionHandler('seekto', d => motor.seek(d.seekTime)); } catch (_) {}
         }
 
@@ -1095,12 +1251,14 @@
             const { alb } = albumActual;
             if (!urlDe(c)) { reanimar(item, 'shake'); return; }      // sin link: no se puede escuchar
             if (esActiva(c)) { togglePlay(); return; }                 // tocar la que ya suena = pausa/play
-            sonar(c[1], alb[2], urlDe(c), alb[3], alb, colLetra >= 0 ? c[colLetra] : '');
+            reproducirCancion(alb, albumActual.cans, +item.dataset.i);
         });
 
         function actualizarScroll() {
             const hayVista = vista.classList.contains('open') || vistaArt.classList.contains('open');
             document.body.classList.toggle('no-scroll', hayVista);
+            document.body.classList.toggle('vista-abierta', hayVista);
+            document.body.classList.toggle('album-abierto', vista.classList.contains('open'));
         }
 
         function cerrarAlbum() {
@@ -1135,6 +1293,9 @@
             vistaArt.setAttribute('aria-hidden', 'true');
             actualizarScroll();
         }
+
+        // Si la pestaña no se ve, se frenan las animaciones decorativas (ahorra batería y CPU)
+        document.addEventListener('visibilitychange', () => document.body.classList.toggle('oculta', document.hidden));
 
         init();
     </script>
