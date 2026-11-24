@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://docs.google.com" crossorigin>
     <link rel="preconnect" href="https://drive.google.com" crossorigin>
     <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
+    <link rel="preconnect" href="https://w.soundcloud.com">
 
     <style>
         :root {
@@ -310,6 +311,8 @@
         input[type="range"]#p-progress-bar:hover::-moz-range-thumb { transform: scale(1.12); }
 
         audio { display: none; }
+        /* Reproductor de SoundCloud: existe pero no se ve */
+        #sc-frame { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; border: 0; opacity: 0; pointer-events: none; }
 
         /* ---------- RESPONSIVE (celular) ---------- */
         @media (max-width: 640px) {
@@ -481,6 +484,10 @@
                     }
                 }
 
+                // Si hay canciones de SoundCloud, se deja su reproductor listo de antemano (primer play más rápido)
+                const primeraSC = canciones.find(c => esSoundCloud(c[2]));
+                if (primeraSC) prepararSC(primeraSC[2].trim()).catch(() => {});
+
                 if (!albumes.length) { grid.innerHTML = '<div class="estado-msg">Todavía no hay álbumes cargados.</div>'; return; }
 
                 // Se arma todo el HTML de una y se inserta una sola vez (mucho más rápido que innerHTML += en un bucle)
@@ -534,6 +541,132 @@
             el.classList.add(clase);
         }
 
+        // =====================================================================
+        //  MOTOR DE REPRODUCCIÓN: audio normal (Drive / GitHub) o SoundCloud
+        // =====================================================================
+        const esSoundCloud = url => /soundcloud\.com|snd\.sc/i.test(url || '');
+
+        let modo = 'audio';          // 'audio' o 'sc'
+        let repetir = false;
+
+        // --- SoundCloud (reproductor oficial invisible, controlado por JS) ---
+        let sc = null, scListo = null, scApi = null, scToken = 0;
+        let scSonando = false, scPos = 0, scT = 0, scDur = 0;
+
+        function cargarSCApi() {
+            return scApi ||= new Promise((res, rej) => {
+                const s = document.createElement('script');
+                s.src = 'https://w.soundcloud.com/player/api.js';
+                s.onload = res;
+                s.onerror = () => { scApi = null; rej(new Error('No cargó la API de SoundCloud')); };
+                document.head.appendChild(s);
+            });
+        }
+
+        const SC_OPCIONES = 'auto_play=false&visual=false&show_artwork=false&show_comments=false&show_user=false&buying=false&sharing=false&download=false&show_teaser=false';
+
+        function leerDuracionSC() {
+            sc.getDuration(ms => {
+                if (!ms) return;
+                scDur = ms / 1000;
+                progressBar.max = scDur;
+                tTotal.innerText = formatTime(scDur);
+                ultimoSeg = -1;
+            });
+        }
+
+        function prepararSC(urlInicial) {
+            if (scListo) return scListo;
+            scListo = cargarSCApi().then(() => new Promise(res => {
+                const f = document.createElement('iframe');
+                f.id = 'sc-frame';
+                f.title = 'SoundCloud';
+                f.allow = 'autoplay; encrypted-media';
+                f.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(urlInicial)}&${SC_OPCIONES}`;
+                document.body.appendChild(f);
+
+                sc = SC.Widget(f);
+                const E = SC.Widget.Events;
+                sc.bind(E.READY, () => res());
+                sc.bind(E.PLAY, () => {
+                    if (modo !== 'sc') { sc.pause(); return; }
+                    scSonando = true; scT = performance.now();
+                    btnPlay.classList.remove('loading');
+                    if (!scDur) leerDuracionSC();
+                    setEstado(true);
+                });
+                sc.bind(E.PAUSE, () => {
+                    if (modo !== 'sc') return;
+                    scSonando = false;
+                    setEstado(false);
+                });
+                sc.bind(E.FINISH, () => {
+                    if (modo !== 'sc') return;
+                    if (repetir) { scPos = 0; scT = performance.now(); sc.seekTo(0); sc.play(); }
+                    else { scSonando = false; scPos = scDur; setEstado(false); pintarProgreso(scDur); }
+                });
+                sc.bind(E.PLAY_PROGRESS, e => {
+                    if (modo !== 'sc') return;
+                    scPos = e.currentPosition / 1000;
+                    scT = performance.now();
+                });
+                sc.bind(E.ERROR, () => {
+                    btnPlay.classList.remove('loading');
+                    console.error('SoundCloud no pudo reproducir esta canción (¿es privada o tiene bloqueado el embed?)');
+                });
+            }));
+            scListo.catch(e => { console.error(e); scListo = null; });
+            return scListo;
+        }
+
+        async function reproducirSC(url) {
+            const token = ++scToken;
+            btnPlay.classList.add('loading');
+            scSonando = false; scPos = 0; scDur = 0;
+            try { await prepararSC(url); } catch { btnPlay.classList.remove('loading'); return; }
+            if (token !== scToken || modo !== 'sc') return;
+            sc.load(url, {
+                auto_play: true, visual: false, show_artwork: false, show_comments: false, show_user: false,
+                callback: () => {
+                    if (token !== scToken || modo !== 'sc') return;
+                    leerDuracionSC();
+                    sc.play();
+                }
+            });
+        }
+
+        // --- Interfaz común: el resto del código no necesita saber de dónde viene el audio ---
+        const motor = {
+            get pausado()  { return modo === 'sc' ? !scSonando : audio.paused; },
+            get duracion() { return modo === 'sc' ? scDur : audio.duration; },
+            get tiempo() {
+                if (modo !== 'sc') return audio.currentTime;
+                const t = scSonando ? scPos + (performance.now() - scT) / 1000 : scPos; // interpolado para que la barra vaya fluida
+                return scDur ? Math.min(t, scDur) : t;
+            },
+            play()  { if (modo === 'sc') { sc && sc.play(); } else audio.play().catch(() => {}); },
+            pause() { if (modo === 'sc') { sc && sc.pause(); } else audio.pause(); },
+            seek(t) {
+                if (modo === 'sc') { if (!sc) return; sc.seekTo(t * 1000); scPos = t; scT = performance.now(); }
+                else audio.currentTime = t;
+            }
+        };
+
+        function cambiarModo(nuevo) {
+            if (modo === 'sc') { scToken++; sc && sc.pause(); scSonando = false; }
+            else { audio.pause(); }
+            modo = nuevo;
+        }
+
+        function resetProgreso() {
+            progressBar.max = 0;
+            progressBar.value = 0;
+            progressBar.style.setProperty('--progress', '0%');
+            tActual.innerText = '0:00';
+            tTotal.innerText = '0:00';
+            ultimoSeg = -1;
+        }
+
         function sonar(t, art, url, img) {
             $('p-tit').innerText = t;
             $('p-art').innerText = art;
@@ -543,18 +676,26 @@
             reanimar(pImg, 'pop');
             cambiarFondo(imgF);
 
-            const src = limpiar(url, true);
+            url = (url || '').trim();
+            const misma = url === urlSonando;
             urlSonando = url;
             marcarActiva();
-            if (audio.src !== src) {
-                audio.src = src;
-                progressBar.value = 0;
-                progressBar.style.setProperty('--progress', '0%');
-                tActual.innerText = '0:00';
+
+            if (misma) {
+                motor.seek(0);
+                motor.play();
+            } else if (esSoundCloud(url)) {
+                cambiarModo('sc');
+                resetProgreso();
+                audio.removeAttribute('src');
+                audio.load();
+                reproducirSC(url);
             } else {
-                audio.currentTime = 0;
+                cambiarModo('audio');
+                resetProgreso();
+                audio.src = limpiar(url, true);
+                audio.play().catch(() => {});
             }
-            audio.play().catch(() => {});
 
             // Controles del celular / pantalla de bloqueo
             if ('mediaSession' in navigator) {
@@ -566,12 +707,16 @@
         }
 
         function togglePlay() {
-            if (!audio.src) return;
-            if (audio.paused) audio.play().catch(() => {});
-            else audio.pause();
+            if (!urlSonando) return;
+            if (motor.pausado) motor.play();
+            else motor.pause();
         }
 
-        function toggleLoop() { audio.loop = !audio.loop; $('btn-loop').classList.toggle('active', audio.loop); }
+        function toggleLoop() {
+            repetir = !repetir;
+            audio.loop = repetir;
+            $('btn-loop').classList.toggle('active', repetir);
+        }
 
         // El estado del botón sigue al audio real (no se desincroniza nunca)
         function setEstado(sonando) {
@@ -582,17 +727,20 @@
             cancelAnimationFrame(rafId);
             if (sonando) rafId = requestAnimationFrame(loopProgreso);
         }
-        audio.addEventListener('play', () => setEstado(true));
-        audio.addEventListener('pause', () => setEstado(false));
-        audio.addEventListener('ended', () => setEstado(false));
-        audio.addEventListener('waiting', () => btnPlay.classList.add('loading'));
-        audio.addEventListener('loadstart', () => btnPlay.classList.add('loading'));
-        ['playing', 'canplay', 'pause', 'error'].forEach(ev => audio.addEventListener(ev, () => btnPlay.classList.remove('loading')));
 
-        // Barra de progreso fluida a 60fps (timeupdate solo se dispara ~4 veces por segundo)
+        // Eventos del <audio> normal (se ignoran mientras suena SoundCloud)
+        const enAudio = (ev, fn) => audio.addEventListener(ev, e => { if (modo === 'audio') fn(e); });
+        enAudio('play', () => setEstado(true));
+        enAudio('pause', () => setEstado(false));
+        enAudio('ended', () => setEstado(false));
+        enAudio('waiting', () => btnPlay.classList.add('loading'));
+        enAudio('loadstart', () => btnPlay.classList.add('loading'));
+        ['playing', 'canplay', 'pause', 'error'].forEach(ev => enAudio(ev, () => btnPlay.classList.remove('loading')));
+
+        // Barra de progreso fluida a 60fps
         let ultimoSeg = -1;
         function pintarProgreso(t) {
-            const d = audio.duration;
+            const d = motor.duracion;
             if (!d || isNaN(d)) return;
             progressBar.value = t;
             progressBar.style.setProperty('--progress', (t / d) * 100 + '%');
@@ -600,24 +748,25 @@
             if (s !== ultimoSeg) { ultimoSeg = s; tActual.innerText = formatTime(t); }
         }
         function loopProgreso() {
-            if (!arrastrando) pintarProgreso(audio.currentTime);
-            if (!audio.paused) rafId = requestAnimationFrame(loopProgreso);
+            if (!arrastrando) pintarProgreso(motor.tiempo);
+            if (!motor.pausado) rafId = requestAnimationFrame(loopProgreso);
         }
-        audio.addEventListener('timeupdate', () => { if (audio.paused && !arrastrando) pintarProgreso(audio.currentTime); });
+        enAudio('timeupdate', () => { if (audio.paused && !arrastrando) pintarProgreso(audio.currentTime); });
+        enAudio('loadedmetadata', () => { progressBar.max = audio.duration; tTotal.innerText = formatTime(audio.duration); ultimoSeg = -1; });
 
-        audio.onloadedmetadata = () => { progressBar.max = audio.duration; tTotal.innerText = formatTime(audio.duration); ultimoSeg = -1; };
-
-        // Mientras arrastrás solo se mueve la barra; el salto real se hace al soltar (evita cortes con Drive)
+        // Mientras arrastrás solo se mueve la barra; el salto real se hace al soltar
         progressBar.addEventListener('input', () => {
             arrastrando = true;
-            const d = audio.duration || 0;
+            const d = motor.duracion || 0;
             const v = +progressBar.value;
             progressBar.style.setProperty('--progress', d ? (v / d) * 100 + '%' : '0%');
             tActual.innerText = formatTime(v);
         });
         progressBar.addEventListener('change', () => {
-            if (audio.duration) audio.currentTime = +progressBar.value;
+            const v = +progressBar.value;
+            if (motor.duracion) motor.seek(v);
             arrastrando = false;
+            if (motor.pausado) { ultimoSeg = -1; pintarProgreso(v); }
         });
 
         function formatTime(s) { if (!isFinite(s)) return '0:00'; const m = Math.floor(s/60); const ss = Math.floor(s%60); return `${m}:${ss<10?'0':''}${ss}`; }
@@ -628,14 +777,14 @@
         });
 
         if ('mediaSession' in navigator) {
-            navigator.mediaSession.setActionHandler('play', () => audio.play().catch(() => {}));
-            navigator.mediaSession.setActionHandler('pause', () => audio.pause());
-            try { navigator.mediaSession.setActionHandler('seekto', d => { audio.currentTime = d.seekTime; }); } catch (_) {}
+            navigator.mediaSession.setActionHandler('play', () => motor.play());
+            navigator.mediaSession.setActionHandler('pause', () => motor.pause());
+            try { navigator.mediaSession.setActionHandler('seekto', d => motor.seek(d.seekTime)); } catch (_) {}
         }
 
         function marcarActiva() {
             lista.querySelectorAll('.song-item').forEach(el => {
-                el.classList.toggle('active', !!albumActual && albumActual.cans[+el.dataset.i]?.[2] === urlSonando);
+                el.classList.toggle('active', !!albumActual && (albumActual.cans[+el.dataset.i]?.[2] || '').trim() === urlSonando);
             });
         }
 
@@ -651,7 +800,7 @@
 
             lista.innerHTML = cans.length
                 ? cans.map((c, i) => `
-                    <div class="song-item${c[2] === urlSonando ? ' active' : ''}" data-i="${i}" style="--i:${Math.min(i, 20)}">
+                    <div class="song-item${(c[2] || '').trim() === urlSonando ? ' active' : ''}" data-i="${i}" style="--i:${Math.min(i, 20)}">
                         <div class="song-num"><span class="num-txt">${i+1}</span><span class="eq"><span></span><span></span><span></span></span></div>
                         <div style="flex:1; min-width:0;"><b>${esc(c[1])}</b><br><small>${esc(alb[2])}</small></div>
                     </div>`).join('')
@@ -668,7 +817,7 @@
             if (!item || !albumActual) return;
             const c = albumActual.cans[+item.dataset.i];
             const { alb } = albumActual;
-            if (c[2] === urlSonando && audio.src) { togglePlay(); return; } // tocar la que ya suena = pausa/play
+            if ((c[2] || '').trim() === urlSonando) { togglePlay(); return; } // tocar la que ya suena = pausa/play
             sonar(c[1], alb[2], c[2], alb[3]);
         });
 
