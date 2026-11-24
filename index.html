@@ -33,7 +33,7 @@
             color: var(--texto);
             font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
             margin: 0;
-            padding-bottom: 140px;
+            padding-bottom: 130px;
             min-height: 100vh;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
@@ -71,8 +71,8 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes playerIn {
-            from { opacity: 0; translate: -50% 40px; }
-            to   { opacity: 1; translate: -50% 0; }
+            from { opacity: 0; translate: 0 100%; }
+            to   { opacity: 1; translate: 0 0; }
         }
 
         header {
@@ -209,24 +209,23 @@
         body.is-paused .eq span { animation-play-state: paused; }
 
         /* ---------- REPRODUCTOR ---------- */
+        /* Barra pegada abajo, de lado a lado (estilo Spotify) */
         .player {
-            position: fixed; bottom: 25px; left: 50%;
-            translate: -50% 0;
-            width: 92%; max-width: 900px;
-            background: rgba(18, 18, 18, 0.95);
+            position: fixed; bottom: 0; left: 0; right: 0;
+            width: 100%;
+            background: rgba(18, 18, 18, 0.97);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 15px 30px;
+            padding: 14px 30px 16px;
             display: flex; flex-direction: column; gap: 10px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
             z-index: 1000;
             box-sizing: border-box;
             animation: playerIn 0.7s 0.2s var(--ease) both;
             transition: border-color 0.4s ease, box-shadow 0.4s ease;
         }
-        body:not(.is-paused) .player { border-color: rgba(0,122,14,0.35); box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 30px rgba(0,77,9,0.25); }
+        body:not(.is-paused) .player { border-top-color: rgba(0,122,14,0.45); box-shadow: 0 -10px 30px rgba(0,0,0,0.5), 0 -4px 24px rgba(0,77,9,0.25); }
 
         .p-main-content { display: flex; align-items: center; justify-content: space-between; width: 100%; }
         .p-info { display: flex; align-items: center; width: 35%; min-width: 0; }
@@ -323,7 +322,7 @@
             .alb-head { gap: 20px; }
             #alb-img { width: 180px; height: 180px; }
             #alb-tit { font-size: 2.2rem; }
-            .player { padding: 12px 18px; bottom: 12px; width: 94%; }
+            .player { padding: 12px 18px 14px; }
             .p-info { width: auto; flex: 1; }
             .p-spacer { display: none; }
         }
