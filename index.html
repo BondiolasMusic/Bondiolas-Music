@@ -25,6 +25,9 @@
             /* Curva de animación común (suave y con un poco de "rebote" al final) */
             --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
             --progress: 0%;
+            --play: #289F64;          /* color del botón de play */
+            --panel-w: 360px;         /* ancho del panel derecho */
+            --player-h: 100px;        /* alto del reproductor (se ajusta solo) */
         }
 
         * { -webkit-tap-highlight-color: transparent; }
@@ -154,7 +157,7 @@
         .fade-img.loaded { opacity: 1; }
 
         /* ---------- VISTA ÁLBUM ---------- */
-        #vista-album {
+        .vista {
             display: block; position: fixed; inset: 0;
             background: rgba(0,0,0,0.85); z-index: 100;
             overflow-y: auto; padding: 60px 40px 160px;
@@ -164,12 +167,14 @@
             transition: opacity 0.35s ease, visibility 0.35s;
             overscroll-behavior: contain;
         }
-        #vista-album.open { opacity: 1; visibility: visible; pointer-events: auto; }
+        .vista.open { opacity: 1; visibility: visible; pointer-events: auto; }
+        #vista-artista { z-index: 100; }
+        #vista-album { z-index: 110; }   /* un álbum abierto desde un perfil queda encima */
 
-        #vista-album .btn-back,
-        #vista-album .alb-head { opacity: 0; translate: 0 20px; transition: opacity 0.45s ease, translate 0.5s var(--ease); }
-        #vista-album.open .btn-back { opacity: 1; translate: 0 0; transition-delay: 0.05s; }
-        #vista-album.open .alb-head { opacity: 1; translate: 0 0; transition-delay: 0.12s; }
+        .vista .btn-back,
+        .vista .alb-head { opacity: 0; translate: 0 20px; transition: opacity 0.45s ease, translate 0.5s var(--ease); }
+        .vista.open .btn-back { opacity: 1; translate: 0 0; transition-delay: 0.05s; }
+        .vista.open .alb-head { opacity: 1; translate: 0 0; transition-delay: 0.12s; }
 
         .btn-back {
             background: var(--primary);
@@ -188,6 +193,21 @@
 
         #lista-canciones { max-width: 850px; margin-top: 20px; }
 
+        /* ---------- NOMBRES DE ARTISTA CLICKEABLES ---------- */
+        .art-link { cursor: pointer; color: inherit; transition: color 0.2s; }
+        .art-link:hover { color: var(--texto); text-decoration: underline; text-underline-offset: 2px; }
+
+        /* ---------- PERFIL DE ARTISTA ---------- */
+        #art-img {
+            width: 220px; height: 220px; border-radius: 50%; object-fit: cover;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); border: 3px solid rgba(0,122,14,0.5);
+            background: rgba(255,255,255,0.04); transition: opacity 0.4s ease;
+        }
+        #art-nom { font-size: 3.5rem; margin: 5px 0 15px 0; line-height: 1.05; }
+        #art-stats { font-size: 1rem; margin: 0; color: var(--texto-sec); }
+        .sec-tit { font-size: 1.5rem; margin: 10px 0 20px; animation: fadeUp 0.5s 0.15s var(--ease) both; }
+        #art-albumes { padding: 0 0 20px; }
+
         .song-item {
             display: flex; align-items: center; padding: 14px; border-radius: 10px; cursor: pointer;
             transition: background 0.2s ease, transform 0.25s var(--ease);
@@ -199,6 +219,14 @@
         .song-num { width: 40px; opacity: 0.4; display: flex; align-items: center; }
         .song-item.active .song-num { opacity: 1; }
         .song-item.active b { color: var(--primary-light); }
+
+        /* Canciones sin link: atenuadas y con el símbolo rojo de "no disponible" */
+        .song-item.no-disp { cursor: not-allowed; }
+        .song-item.no-disp b, .song-item.no-disp small, .song-item.no-disp .song-num { opacity: 0.45; }
+        .song-item.no-disp:hover { background: rgba(255,60,60,0.06); transform: none; }
+        .icon-no-disp { color: #e53935; flex-shrink: 0; margin-left: 12px; filter: drop-shadow(0 0 4px rgba(229,57,53,0.4)); }
+        @keyframes shake { 0%,100% { translate: 0 0; } 20%,60% { translate: -6px 0; } 40%,80% { translate: 6px 0; } }
+        .song-item.shake { animation: shake 0.35s ease; }
 
         /* Ecualizador animado en la canción que está sonando */
         .eq { display: none; gap: 2px; align-items: flex-end; height: 14px; }
@@ -243,34 +271,30 @@
         .control-btn:active { transform: scale(0.92); }
         .control-btn.active { color: var(--primary-light); filter: drop-shadow(0 0 6px var(--primary-light)); }
 
-        /* CAMBIO: CENTRADO DE ICONOS */
+        /* Botón de play minimalista: círculo liso, sin bordes ni sombras */
         .play-main {
-            position: relative;
-            background: linear-gradient(45deg, var(--primary), var(--primary-light));
-            color: white; width: 45px; height: 45px; border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(0, 77, 9, 0.5); border: 2px solid rgba(255,255,255,0.2);
+            background: var(--play);
+            color: #fff; width: 46px; height: 46px; border-radius: 50%;
+            border: none; outline: none; box-shadow: none;
             display: flex !important;
             align-items: center;
             justify-content: center;
             padding: 0;
-            transition: transform 0.2s var(--ease), box-shadow 0.3s ease;
+            transition: transform 0.2s var(--ease), filter 0.2s ease;
         }
-        .play-main:hover { color: white; box-shadow: 0 6px 18px rgba(0, 122, 14, 0.6); }
+        .play-main:hover { color: #fff; transform: scale(1.06); filter: brightness(1.1); }
+        .play-main:active { transform: scale(0.94); }
 
         .p-icon-play, .p-icon-pause { display: none; }
         /* Ajuste visual para que el triángulo del play se vea centrado al ojo */
-        .p-icon-play { margin-left: 3px; }
+        .p-icon-play { margin-left: 2px; }
 
         .playing .p-icon-pause { display: block; animation: pop 0.3s var(--ease); }
         .paused .p-icon-play { display: block; animation: pop 0.3s var(--ease); }
 
-        /* Aro girando mientras el audio carga (buffering) */
-        .play-main::after {
-            content: ''; position: absolute; inset: -5px; border-radius: 50%;
-            border: 2px solid transparent; border-top-color: var(--primary-light);
-            opacity: 0; transition: opacity 0.2s;
-        }
-        .play-main.loading::after { opacity: 1; animation: spin 0.8s linear infinite; }
+        /* Mientras el audio carga, el botón "respira" suavemente (sin agregar bordes) */
+        @keyframes respirar { 50% { opacity: 0.55; } }
+        .play-main.loading { animation: respirar 1s ease-in-out infinite; }
 
         .p-progress-container { display: flex; align-items: center; gap: 10px; width: 100%; }
         .time-display { font-size: 0.75rem; color: var(--texto-sec); width: 35px; text-align: center; font-variant-numeric: tabular-nums; }
@@ -310,6 +334,60 @@
         }
         input[type="range"]#p-progress-bar:hover::-moz-range-thumb { transform: scale(1.12); }
 
+        /* ---------- PANEL DERECHO: info + letra ---------- */
+        #panel-info {
+            position: fixed; top: 0; right: 0; bottom: var(--player-h);
+            width: var(--panel-w); box-sizing: border-box;
+            background: rgba(18, 18, 18, 0.97);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255,255,255,0.08);
+            z-index: 900;
+            display: flex; flex-direction: column;
+            transform: translateX(100%); visibility: hidden;
+            transition: transform 0.45s var(--ease), visibility 0.45s;
+        }
+        body.panel-open #panel-info { transform: none; visibility: visible; }
+
+        /* En pantallas grandes, el contenido se corre para dejarle lugar al panel */
+        @media (min-width: 900px) {
+            #main-view, .vista { transition: padding-right 0.45s var(--ease), right 0.45s var(--ease), opacity 0.35s ease, visibility 0.35s; }
+            body.panel-open #main-view { padding-right: var(--panel-w); }
+            body.panel-open .vista { right: var(--panel-w); }
+        }
+
+        .pi-top { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 6px; }
+        .pi-label { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; color: var(--primary-light); letter-spacing: 0.5px; }
+        .pi-cerrar { background: none; border: none; color: var(--texto-sec); cursor: pointer; padding: 4px; display: flex; border-radius: 50%; transition: color 0.2s, background 0.2s; }
+        .pi-cerrar:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+        .pi-scroll { flex: 1; overflow-y: auto; padding: 10px 20px 30px; overscroll-behavior: contain; }
+        .pi-scroll::-webkit-scrollbar { width: 6px; }
+        .pi-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        .pi-contenido.pop { animation: fadeUp 0.45s var(--ease); }
+
+        #pi-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; display: block; background: rgba(255,255,255,0.04); box-shadow: 0 14px 30px rgba(0,0,0,0.5); transition: opacity 0.4s ease; }
+        #pi-tit { font-size: 1.5rem; font-weight: 800; margin: 18px 0 4px; line-height: 1.15; }
+        .pi-art { color: var(--texto-sec); font-size: 0.95rem; }
+        .pi-alb { color: var(--texto-sec); font-size: 0.85rem; margin-top: 6px; }
+        .pi-alb-link { color: var(--texto); cursor: pointer; }
+        .pi-alb-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+        .pi-sc {
+            display: inline-flex; align-items: center; gap: 8px; margin-top: 16px;
+            background: #ff5500; color: #fff; text-decoration: none; font-weight: 700; font-size: 0.85rem;
+            padding: 10px 18px; border-radius: 50px;
+            transition: transform 0.2s var(--ease), filter 0.2s;
+        }
+        .pi-sc:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .pi-sc[hidden] { display: none; }
+
+        .pi-letra-box { margin-top: 22px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 18px; }
+        #pi-letra-tit { margin: 0 0 12px; font-size: 1rem; }
+        #pi-letra { white-space: pre-wrap; line-height: 1.7; font-size: 0.95rem; color: #ddd; word-break: break-word; }
+        #pi-letra.vacia { color: var(--texto-sec); font-style: italic; }
+
+        .p-extra { width: 30%; display: flex; justify-content: flex-end; }
+
         audio { display: none; }
         /* Reproductor de SoundCloud: existe pero no se ve */
         #sc-frame { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; border: 0; opacity: 0; pointer-events: none; }
@@ -321,13 +399,16 @@
             .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 16px 20px; }
             .card { padding: 12px; }
             .card-play { width: 36px; height: 36px; opacity: 1; transform: none; }
-            #vista-album { padding: 30px 20px 170px; }
+            .vista { padding: 30px 20px 170px; }
+            #art-img { width: 160px; height: 160px; }
+            #art-nom { font-size: 2.2rem; }
             .alb-head { gap: 20px; }
             #alb-img { width: 180px; height: 180px; }
             #alb-tit { font-size: 2.2rem; }
             .player { padding: 12px 18px 14px; }
             .p-info { width: auto; flex: 1; }
-            .p-spacer { display: none; }
+            .p-extra { width: auto; margin-left: 12px; }
+            #panel-info { width: 100%; }
         }
 
         /* Respeta a quien tiene las animaciones desactivadas en el sistema */
@@ -350,7 +431,21 @@
         <div class="grid" id="grid-albumes"></div>
     </div>
 
-    <div id="vista-album" aria-hidden="true">
+    <div id="vista-artista" class="vista" aria-hidden="true">
+        <button class="btn-back" onclick="cerrarArtista()">← Volver</button>
+        <div class="alb-head">
+            <img id="art-img" class="fade-img" alt="">
+            <div>
+                <span class="alb-label">Artista</span>
+                <h2 id="art-nom"></h2>
+                <p id="art-stats"></p>
+            </div>
+        </div>
+        <h3 class="sec-tit">Álbumes</h3>
+        <div class="grid" id="art-albumes"></div>
+    </div>
+
+    <div id="vista-album" class="vista" aria-hidden="true">
         <button class="btn-back" onclick="cerrarAlbum()">← Volver</button>
         <div class="alb-head">
             <img id="alb-img" class="fade-img" alt="">
@@ -362,6 +457,31 @@
         </div>
         <div id="lista-canciones"></div>
     </div>
+
+    <aside id="panel-info" aria-hidden="true">
+        <div class="pi-top">
+            <span class="pi-label">Sonando ahora</span>
+            <button class="pi-cerrar" onclick="cerrarPanel()" title="Cerrar">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+            </button>
+        </div>
+        <div class="pi-scroll">
+            <div class="pi-contenido" id="pi-contenido">
+                <img id="pi-img" class="fade-img" alt="">
+                <h3 id="pi-tit"></h3>
+                <div id="pi-art" class="pi-art"></div>
+                <div class="pi-alb">Álbum · <span id="pi-alb" class="pi-alb-link"></span></div>
+                <a id="pi-sc" class="pi-sc" target="_blank" rel="noopener" hidden>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    Escuchar en SoundCloud
+                </a>
+                <div class="pi-letra-box">
+                    <h4 id="pi-letra-tit">Letra</h4>
+                    <div id="pi-letra"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
 
     <div class="player">
         <div class="p-main-content">
@@ -382,7 +502,11 @@
                     <svg class="p-icon-pause" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                 </button>
             </div>
-            <div class="p-spacer" style="width:30%;"></div>
+            <div class="p-extra">
+                <button class="control-btn" id="btn-panel" onclick="togglePanel()" title="Letra e info">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3 5h12v2H3zm0 4h12v2H3zm0 4h8v2H3zm14-8h4v2h-2v8.5a2.5 2.5 0 1 1-2-2.45z"/></svg>
+                </button>
+            </div>
         </div>
 
         <div class="p-progress-container">
@@ -396,11 +520,12 @@
     </div>
 
     <script>
-        const URL_ALB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=0&single=true&output=tsv";
-        const URL_CAN = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=92592278&single=true&output=tsv";
+        const URL_ALB = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=0&single=true&output=csv";
+        const URL_CAN = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=92592278&single=true&output=csv";
 
+        // NOTA: los enlaces usan output=csv (y no tsv) para que las letras con varias líneas se lean bien.
         // --- AQUÍ PEGA EL ENLACE DE LA PESTAÑA "CONFIG" ---
-        const URL_CFG = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=1912040231&single=true&output=tsv";
+        const URL_CFG = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSeiWFIXNf9Xvg2kBMH9VUoQzZzpAAVmcXg2T6PtO-gip5nj0sx2QlTF2LKNHerqqvM2TJZnjLfeGz/pub?gid=1912040231&single=true&output=csv";
 
         // Imagen de reemplazo (antes usaba via.placeholder.com, que ya no funciona)
         const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent(
@@ -411,6 +536,8 @@
         let albumes = [], canciones = [];
         let albumActual = null;      // { alb, cans } del álbum abierto
         let urlSonando = '';         // para marcar la canción activa
+        const urlDe = c => (c && c[2] ? c[2] : '').trim();   // link de la canción (vacío = no disponible)
+        const esActiva = c => { const u = urlDe(c); return !!u && u === urlSonando; };
         let arrastrando = false;     // true mientras el usuario mueve la barra
         let rafId = 0;
 
@@ -421,6 +548,7 @@
         const btnPlay = $('btn-play');
         const grid = $('grid-albumes');
         const vista = $('vista-album');
+        const vistaArt = $('vista-artista');
         const lista = $('lista-canciones');
         const bg = $('bg-album-blur');
         const pImg = $('p-img');
@@ -454,7 +582,62 @@
             if (img.tagName === 'IMG' && img.getAttribute('src') !== PLACEHOLDER) img.src = PLACEHOLDER;
         }, true);
 
-        const leerTSV = txt => txt.split(/\r?\n/).slice(1).filter(l => l.trim()).map(l => l.split('\t'));
+        // ---------- ARTISTAS ----------
+        // "Taksugo, Juanjokes" -> ["Taksugo", "Juanjokes"]
+        const partirArtistas = str => String(str || '').split(',').map(x => x.trim()).filter(Boolean);
+        const normArt = n => n.trim().toLowerCase();
+        let artistas = new Map();   // nombre normalizado -> { nombre, albumes: [] }
+
+        function indexarArtistas() {
+            artistas = new Map();
+            albumes.forEach(a => partirArtistas(a[2]).forEach(n => {
+                const k = normArt(n);
+                if (!artistas.has(k)) artistas.set(k, { nombre: n, albumes: [] });
+                const ar = artistas.get(k);
+                if (!ar.albumes.includes(a)) ar.albumes.push(a);
+            }));
+        }
+
+        // Devuelve los nombres como links clickeables, separados por coma
+        const artistasHTML = str => partirArtistas(str)
+            .map(n => `<span class="art-link" data-art="${esc(n)}" role="link" tabindex="0">${esc(n)}</span>`)
+            .join(', ');
+
+        const tarjetaHTML = (a, i) => `
+                    <div class="card" tabindex="0" data-id="${esc(a[0].trim())}" style="--i:${Math.min(i, 16)}">
+                        <div class="card-cover">
+                            <img class="fade-img" src="${esc(limpiar(a[3]) || PLACEHOLDER)}" alt="" loading="lazy" decoding="async">
+                            <div class="card-play"><svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
+                        </div>
+                        <div class="card-tit">${esc(a[1])}</div>
+                        <div class="card-art">${artistasHTML(a[2])}</div>
+                    </div>`;
+
+        // Lee CSV/TSV respetando celdas entre comillas (letras con saltos de línea, comas, etc.)
+        function parsearTabla(txt, sep) {
+            const filas = []; let fila = [], campo = '', comillas = false;
+            for (let i = 0; i < txt.length; i++) {
+                const ch = txt[i];
+                if (comillas) {
+                    if (ch === '"') { if (txt[i + 1] === '"') { campo += '"'; i++; } else comillas = false; }
+                    else campo += ch;
+                } else if (ch === '"' && campo === '') comillas = true;
+                else if (ch === sep) { fila.push(campo); campo = ''; }
+                else if (ch === '\n' || ch === '\r') {
+                    if (ch === '\r' && txt[i + 1] === '\n') i++;
+                    fila.push(campo); filas.push(fila); fila = []; campo = '';
+                } else campo += ch;
+            }
+            if (campo !== '' || fila.length) { fila.push(campo); filas.push(fila); }
+            return filas;
+        }
+        // Devuelve { cab: encabezados, filas: datos sin la fila de títulos }
+        function leerTabla(txt, url) {
+            const f = parsearTabla(txt, /output=tsv/.test(url) ? '\t' : ',');
+            return { cab: f[0] || [], filas: f.slice(1).filter(r => r.some(c => c.trim())) };
+        }
+        const normTxt = t => String(t || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f'"‘’“”]/g, '');
+        let colLetra = -1;   // columna "Letra" de la hoja Canciones (se busca por nombre)
 
         function mostrarSkeletons(n = 8) {
             grid.innerHTML = Array.from({ length: n }, (_, i) =>
@@ -472,12 +655,15 @@
                     URL_CFG.startsWith('http') ? fetch(URL_CFG).catch(() => null) : Promise.resolve(null)
                 ]);
 
-                albumes = leerTSV(await resA.text());
-                canciones = leerTSV(await resC.text());
+                albumes = leerTabla(await resA.text(), URL_ALB).filas;
+                const tCan = leerTabla(await resC.text(), URL_CAN);
+                canciones = tCan.filas;
+                colLetra = tCan.cab.findIndex(h => normTxt(h) === 'letra');
+                indexarArtistas();
 
                 // Cargar imagen del circulito desde Excel
                 if (resConfig && resConfig.ok) {
-                    const configData = leerTSV(await resConfig.text());
+                    const configData = leerTabla(await resConfig.text(), URL_CFG).filas;
                     if (configData[0] && configData[0][0]) {
                         const thumbUrlFinal = limpiar(configData[0][0]);
                         document.documentElement.style.setProperty('--thumb-url', `url('${thumbUrlFinal}')`);
@@ -491,27 +677,31 @@
                 if (!albumes.length) { grid.innerHTML = '<div class="estado-msg">Todavía no hay álbumes cargados.</div>'; return; }
 
                 // Se arma todo el HTML de una y se inserta una sola vez (mucho más rápido que innerHTML += en un bucle)
-                grid.innerHTML = albumes.map((a, i) => `
-                    <div class="card" tabindex="0" data-id="${esc(a[0].trim())}" style="--i:${Math.min(i, 16)}">
-                        <div class="card-cover">
-                            <img class="fade-img" src="${esc(limpiar(a[3]) || PLACEHOLDER)}" alt="" loading="lazy" decoding="async">
-                            <div class="card-play"><svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
-                        </div>
-                        <div class="card-tit">${esc(a[1])}</div>
-                        <div class="card-art">${esc(a[2])}</div>
-                    </div>`).join('');
+                grid.innerHTML = albumes.map(tarjetaHTML).join('');
             } catch (e) {
                 console.error("Error cargando datos", e);
                 grid.innerHTML = '<div class="estado-msg">No se pudo cargar la biblioteca. Revisá tu conexión y recargá la página.</div>';
             }
         }
 
-        // Click en tarjetas (un solo listener para todas)
-        grid.addEventListener('click', e => {
+        // Click en nombres de artista (va primero y frena el click de la tarjeta / canción)
+        const abrirArtistaDesde = e => {
+            const link = e.target.closest('.art-link');
+            if (!link) return false;
+            e.stopPropagation();
+            e.preventDefault();
+            verArtista(link.dataset.art);
+            return true;
+        };
+        document.addEventListener('click', abrirArtistaDesde, true);
+        document.addEventListener('keydown', e => { if (e.key === 'Enter') abrirArtistaDesde(e); }, true);
+
+        // Click en tarjetas de álbum (inicio y perfiles; un solo listener para todas)
+        document.addEventListener('click', e => {
             const card = e.target.closest('.card[data-id]');
             if (card) verAlbum(card.dataset.id);
         });
-        grid.addEventListener('keydown', e => {
+        document.addEventListener('keydown', e => {
             if (e.key !== 'Enter') return;
             const card = e.target.closest('.card[data-id]');
             if (card) verAlbum(card.dataset.id);
@@ -631,6 +821,11 @@
                     if (token !== scToken || modo !== 'sc') return;
                     leerDuracionSC();
                     sc.play();
+                    // Si la canción no tiene letra en el Sheets, se usa la descripción de SoundCloud
+                    if (!letraActual) sc.getCurrentSound(snd => {
+                        if (token !== scToken || letraActual) return;
+                        mostrarDescripcionSC(snd && snd.description);
+                    });
                 }
             });
         }
@@ -667,9 +862,58 @@
             ultimoSeg = -1;
         }
 
-        function sonar(t, art, url, img) {
+        // ---------- PANEL DERECHO ----------
+        const panel = $('panel-info');
+        let letraActual = '';
+
+        function abrirPanel()  { document.body.classList.add('panel-open'); panel.setAttribute('aria-hidden', 'false'); $('btn-panel').classList.add('active'); }
+        function cerrarPanel() { document.body.classList.remove('panel-open'); panel.setAttribute('aria-hidden', 'true'); $('btn-panel').classList.remove('active'); }
+        function togglePanel() { if (!urlSonando) return; document.body.classList.contains('panel-open') ? cerrarPanel() : abrirPanel(); }
+
+        function ponerLetra(titulo, texto, vacioMsg) {
+            const el = $('pi-letra');
+            const limpio = String(texto || '').replace(/\r\n?/g, '\n').trim();
+            $('pi-letra-tit').innerText = titulo;
+            el.textContent = limpio || vacioMsg;
+            el.classList.toggle('vacia', !limpio);
+        }
+        function mostrarDescripcionSC(desc) {
+            ponerLetra('Descripción', desc, 'Esta canción todavía no tiene letra ni descripción.');
+        }
+
+        function mostrarInfo(t, art, url, imgF, alb, letra) {
+            setImg($('pi-img'), imgF);
+            $('pi-tit').innerText = t;
+            $('pi-art').innerHTML = artistasHTML(art);
+            const albEl = $('pi-alb');
+            albEl.innerText = alb ? alb[1] : '—';
+            albEl.dataset.id = alb ? alb[0].trim() : '';
+
+            const scBtn = $('pi-sc');
+            if (esSoundCloud(url)) { scBtn.href = url; scBtn.hidden = false; }
+            else { scBtn.removeAttribute('href'); scBtn.hidden = true; }
+
+            letraActual = String(letra || '').trim();
+            if (letraActual) ponerLetra('Letra', letraActual);
+            else if (esSoundCloud(url)) ponerLetra('Descripción', '', 'Cargando descripción de SoundCloud…');
+            else ponerLetra('Letra', '', 'Esta canción todavía no tiene letra.');
+
+            panel.querySelector('.pi-scroll').scrollTop = 0;
+            reanimar($('pi-contenido'), 'pop');
+            abrirPanel();
+        }
+
+        $('pi-alb').addEventListener('click', e => { const id = e.currentTarget.dataset.id; if (id) verAlbum(id); });
+
+        // El panel termina justo arriba del reproductor, aunque cambie su alto
+        if ('ResizeObserver' in window) {
+            const playerEl = document.querySelector('.player');
+            new ResizeObserver(() => document.documentElement.style.setProperty('--player-h', playerEl.offsetHeight + 'px')).observe(playerEl);
+        }
+
+        function sonar(t, art, url, img, alb = null, letra = '') {
             $('p-tit').innerText = t;
-            $('p-art').innerText = art;
+            $('p-art').innerHTML = artistasHTML(art);
             reanimar($('p-text'), 'pop');
             const imgF = limpiar(img);
             setImg(pImg, imgF);
@@ -680,6 +924,8 @@
             const misma = url === urlSonando;
             urlSonando = url;
             marcarActiva();
+            if (misma) abrirPanel();
+            else mostrarInfo(t, art, url, imgF, alb, letra);
 
             if (misma) {
                 motor.seek(0);
@@ -773,7 +1019,11 @@
 
         window.addEventListener('keydown', (e) => {
             if (e.code === "Space" && !e.repeat) { e.preventDefault(); togglePlay(); }
-            if (e.key === "Escape" && vista.classList.contains('open')) cerrarAlbum();
+            if (e.key === "Escape") {
+                if (vista.classList.contains('open')) cerrarAlbum();
+                else if (vistaArt.classList.contains('open')) cerrarArtista();
+                else if (document.body.classList.contains('panel-open')) cerrarPanel();
+            }
         });
 
         if ('mediaSession' in navigator) {
@@ -784,7 +1034,7 @@
 
         function marcarActiva() {
             lista.querySelectorAll('.song-item').forEach(el => {
-                el.classList.toggle('active', !!albumActual && (albumActual.cans[+el.dataset.i]?.[2] || '').trim() === urlSonando);
+                el.classList.toggle('active', !!albumActual && esActiva(albumActual.cans[+el.dataset.i]));
             });
         }
 
@@ -796,20 +1046,21 @@
 
             setImg($('alb-img'), limpiar(alb[3]));
             $('alb-tit').innerText = alb[1];
-            $('alb-art').innerText = alb[2];
+            $('alb-art').innerHTML = artistasHTML(alb[2]);
 
             lista.innerHTML = cans.length
                 ? cans.map((c, i) => `
-                    <div class="song-item${(c[2] || '').trim() === urlSonando ? ' active' : ''}" data-i="${i}" style="--i:${Math.min(i, 20)}">
+                    <div class="song-item${esActiva(c) ? ' active' : ''}${urlDe(c) ? '' : ' no-disp'}" data-i="${i}" style="--i:${Math.min(i, 20)}"${urlDe(c) ? '' : ' title="No disponible para escuchar"'}>
                         <div class="song-num"><span class="num-txt">${i+1}</span><span class="eq"><span></span><span></span><span></span></span></div>
-                        <div style="flex:1; min-width:0;"><b>${esc(c[1])}</b><br><small>${esc(alb[2])}</small></div>
+                        <div style="flex:1; min-width:0;"><b>${esc(c[1])}</b><br><small>${artistasHTML(alb[2])}</small></div>
+                        ${urlDe(c) ? '' : '<svg class="icon-no-disp" viewBox="0 0 24 24" width="20" height="20" aria-label="No disponible"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M5.6 5.6l12.8 12.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>'}
                     </div>`).join('')
                 : '<div class="estado-msg">Este álbum todavía no tiene canciones.</div>';
 
             vista.scrollTop = 0;
             vista.classList.add('open');
             vista.setAttribute('aria-hidden', 'false');
-            document.body.classList.add('no-scroll');
+            actualizarScroll();
         }
 
         lista.addEventListener('click', e => {
@@ -817,14 +1068,47 @@
             if (!item || !albumActual) return;
             const c = albumActual.cans[+item.dataset.i];
             const { alb } = albumActual;
-            if ((c[2] || '').trim() === urlSonando) { togglePlay(); return; } // tocar la que ya suena = pausa/play
-            sonar(c[1], alb[2], c[2], alb[3]);
+            if (!urlDe(c)) { reanimar(item, 'shake'); return; }      // sin link: no se puede escuchar
+            if (esActiva(c)) { togglePlay(); return; }                 // tocar la que ya suena = pausa/play
+            sonar(c[1], alb[2], c[2], alb[3], alb, colLetra >= 0 ? c[colLetra] : '');
         });
+
+        function actualizarScroll() {
+            const hayVista = vista.classList.contains('open') || vistaArt.classList.contains('open');
+            document.body.classList.toggle('no-scroll', hayVista);
+        }
 
         function cerrarAlbum() {
             vista.classList.remove('open');
             vista.setAttribute('aria-hidden', 'true');
-            document.body.classList.remove('no-scroll');
+            actualizarScroll();   // si venías de un perfil, volvés a él
+        }
+
+        // ---------- PERFIL DE ARTISTA ----------
+        function verArtista(nombre) {
+            const ar = artistas.get(normArt(nombre || ''));
+            if (!ar) return;
+            if (vista.classList.contains('open')) cerrarAlbum();   // el perfil queda debajo del álbum, así que se cierra el álbum
+
+            const ids = new Set(ar.albumes.map(a => a[0].trim()));
+            const nCanciones = canciones.filter(c => ids.has(c[0].trim())).length;
+            const nAlb = ar.albumes.length;
+
+            setImg($('art-img'), limpiar(ar.albumes[0][3]));
+            $('art-nom').innerText = ar.nombre;
+            $('art-stats').innerText = `${nAlb} ${nAlb === 1 ? 'álbum' : 'álbumes'} · ${nCanciones} ${nCanciones === 1 ? 'canción' : 'canciones'}`;
+            $('art-albumes').innerHTML = ar.albumes.map(tarjetaHTML).join('');
+
+            vistaArt.scrollTop = 0;
+            vistaArt.classList.add('open');
+            vistaArt.setAttribute('aria-hidden', 'false');
+            actualizarScroll();
+        }
+
+        function cerrarArtista() {
+            vistaArt.classList.remove('open');
+            vistaArt.setAttribute('aria-hidden', 'true');
+            actualizarScroll();
         }
 
         init();
