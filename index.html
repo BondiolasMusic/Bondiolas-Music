@@ -536,7 +536,8 @@
         let albumes = [], canciones = [];
         let albumActual = null;      // { alb, cans } del álbum abierto
         let urlSonando = '';         // para marcar la canción activa
-        const urlDe = c => (c && c[2] ? c[2] : '').trim();   // link de la canción (vacío = no disponible)
+        let colUrl = 2;      // columna del link de la canción (se detecta sola al cargar)
+        const urlDe = c => (c && c[colUrl] ? c[colUrl] : '').trim();   // link de la canción (vacío = no disponible)
         const esActiva = c => { const u = urlDe(c); return !!u && u === urlSonando; };
         let arrastrando = false;     // true mientras el usuario mueve la barra
         let rafId = 0;
@@ -615,6 +616,8 @@
 
         // Lee CSV/TSV respetando celdas entre comillas (letras con saltos de línea, comas, etc.)
         function parsearTabla(txt, sep) {
+            // TSV de Google: se lee tal cual (igual que la versión original), sin interpretar comillas
+            if (sep === '\t') return txt.split(/\r?\n/).map(l => l.split('\t'));
             const filas = []; let fila = [], campo = '', comillas = false;
             for (let i = 0; i < txt.length; i++) {
                 const ch = txt[i];
@@ -639,6 +642,23 @@
         const normTxt = t => String(t || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f'"‘’“”]/g, '');
         let colLetra = -1;   // columna "Letra" de la hoja Canciones (se busca por nombre)
 
+        // Busca en qué columna están los links de las canciones:
+        // 1) por el nombre del encabezado, 2) si no, la columna con más links, 3) si no, la 3ra (como antes)
+        const pareceLink = v => /^https?:\/\//i.test(String(v || '').trim());
+        function detectarColUrl(cab, filas) {
+            const nombres = ['url', 'link', 'links', 'enlace', 'audio', 'soundcloud', 'archivo', 'mp3'];
+            const porNombre = cab.findIndex((h, j) => j > 1 && j !== colLetra && nombres.includes(normTxt(h)));
+            if (porNombre !== -1) return porNombre;
+            let mejor = -1, max = 0;
+            const ancho = Math.max(cab.length, ...filas.map(f => f.length));
+            for (let j = 2; j < ancho; j++) {
+                if (j === colLetra) continue;
+                const n = filas.filter(f => pareceLink(f[j])).length;
+                if (n > max) { max = n; mejor = j; }
+            }
+            return mejor !== -1 ? mejor : 2;
+        }
+
         function mostrarSkeletons(n = 8) {
             grid.innerHTML = Array.from({ length: n }, (_, i) =>
                 `<div class="card skeleton" style="--i:${i}"><div class="sk sk-img"></div><div class="sk sk-line"></div><div class="sk sk-line short"></div></div>`
@@ -659,6 +679,7 @@
                 const tCan = leerTabla(await resC.text(), URL_CAN);
                 canciones = tCan.filas;
                 colLetra = tCan.cab.findIndex(h => normTxt(h) === 'letra');
+                colUrl = detectarColUrl(tCan.cab, canciones);
                 indexarArtistas();
 
                 // Cargar imagen del circulito desde Excel
@@ -671,8 +692,12 @@
                 }
 
                 // Si hay canciones de SoundCloud, se deja su reproductor listo de antemano (primer play más rápido)
-                const primeraSC = canciones.find(c => esSoundCloud(c[2]));
-                if (primeraSC) prepararSC(primeraSC[2].trim()).catch(() => {});
+                const primeraSC = canciones.find(c => esSoundCloud(urlDe(c)));
+                if (primeraSC) prepararSC(urlDe(primeraSC)).catch(() => {});
+
+                // Ayuda para revisar el Sheets: muestra en la consola (F12) qué canciones quedaron sin link
+                const sinLink = canciones.filter(c => !urlDe(c)).map(c => `${c[0]} - ${c[1]}`);
+                console.info(`[Bondiolas] Columna de links: ${colUrl + 1} (${tCan.cab[colUrl] || 'sin título'}) · Columna de letra: ${colLetra + 1 || 'no encontrada'} · Canciones sin link: ${sinLink.length}`, sinLink);
 
                 if (!albumes.length) { grid.innerHTML = '<div class="estado-msg">Todavía no hay álbumes cargados.</div>'; return; }
 
@@ -1070,7 +1095,7 @@
             const { alb } = albumActual;
             if (!urlDe(c)) { reanimar(item, 'shake'); return; }      // sin link: no se puede escuchar
             if (esActiva(c)) { togglePlay(); return; }                 // tocar la que ya suena = pausa/play
-            sonar(c[1], alb[2], c[2], alb[3], alb, colLetra >= 0 ? c[colLetra] : '');
+            sonar(c[1], alb[2], urlDe(c), alb[3], alb, colLetra >= 0 ? c[colLetra] : '');
         });
 
         function actualizarScroll() {
