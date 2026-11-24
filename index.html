@@ -145,8 +145,19 @@
             opacity: 0; transform: translateY(10px);
             transition: opacity 0.3s ease, transform 0.35s var(--ease);
         }
-        .card-play svg { margin-left: 2px; }
+        .card-play { cursor: pointer; background: var(--play); }
+        .card-play:hover { filter: brightness(1.12); }
+        .card-play:active { transform: scale(0.92) !important; }
+        .card-play .ic-play { margin-left: 2px; }
+        .card-play .ic-pausa { display: none; }
         .card:hover .card-play, .card:focus-visible .card-play { opacity: 1; transform: translateY(0); }
+
+        /* Álbum que está sonando: el botón queda siempre visible y muestra pausa */
+        .card.sonando { border-color: rgba(40,159,100,0.5); }
+        .card.sonando .card-play { opacity: 1; transform: translateY(0); }
+        body:not(.is-paused) .card.sonando .ic-play { display: none; }
+        body:not(.is-paused) .card.sonando .ic-pausa { display: block; }
+        .card.shake { animation: shake 0.35s ease; }
 
         .card-tit { margin-top: 15px; font-weight: 700; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .card-art { color: var(--texto-sec); font-size: 0.85rem; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -283,6 +294,8 @@
 
         /* Botón de repetir: "1" chiquito cuando repite la canción */
         #btn-loop { position: relative; }
+        .btn-salto { color: #ddd; }
+        .btn-salto:disabled { opacity: 0.3; cursor: default; transform: none; }
         #btn-loop::after {
             content: '1'; position: absolute; top: -4px; right: -6px;
             font-size: 0.6rem; font-weight: 900; line-height: 1;
@@ -523,9 +536,15 @@
                 <button class="control-btn" id="btn-loop" onclick="toggleLoop()" title="Repetir: desactivado">
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
                 </button>
+                <button class="control-btn btn-salto" id="btn-prev" onclick="anterior()" title="Anterior">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+                </button>
                 <button class="control-btn play-main paused" id="btn-play" onclick="togglePlay()" title="Reproducir / Pausar">
                     <svg class="p-icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                     <svg class="p-icon-pause" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button class="control-btn btn-salto" id="btn-next" onclick="siguiente()" title="Siguiente">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="m6 18 8.5-6L6 6zM16 6h2v12h-2z"/></svg>
                 </button>
             </div>
             <div class="p-extra">
@@ -631,10 +650,13 @@
             .join(', ');
 
         const tarjetaHTML = (a, i) => `
-                    <div class="card" tabindex="0" data-id="${esc(a[0].trim())}" style="--i:${Math.min(i, 16)}">
+                    <div class="card${reproduciendo && reproduciendo.alb === a ? ' sonando' : ''}" tabindex="0" data-id="${esc(a[0].trim())}" style="--i:${Math.min(i, 16)}">
                         <div class="card-cover">
                             <img class="fade-img" src="${esc(limpiar(a[3], false, 400) || PLACEHOLDER)}" alt="" loading="lazy" decoding="async" width="400" height="400">
-                            <div class="card-play"><svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
+                            <div class="card-play" role="button" title="Reproducir álbum">
+                                <svg class="ic-play" viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M8 5v14l11-7z"/></svg>
+                                <svg class="ic-pausa" viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            </div>
                         </div>
                         <div class="card-tit">${esc(a[1])}</div>
                         <div class="card-art">${artistasHTML(a[2])}</div>
@@ -750,8 +772,27 @@
         // Click en tarjetas de álbum (inicio y perfiles; un solo listener para todas)
         document.addEventListener('click', e => {
             const card = e.target.closest('.card[data-id]');
-            if (card) verAlbum(card.dataset.id);
+            if (!card) return;
+            if (e.target.closest('.card-play')) reproducirAlbum(card);   // botón de play: reproduce sin abrir el álbum
+            else verAlbum(card.dataset.id);
         });
+
+        // Play de la tarjeta: si ese álbum ya suena -> pausa/reanuda; si no -> arranca desde la primera canción
+        function reproducirAlbum(card) {
+            const alb = albumes.find(a => a[0].trim() == card.dataset.id.trim());
+            if (!alb) return;
+            if (reproduciendo && reproduciendo.alb === alb) { togglePlay(); return; }
+            const cans = cancionesDe(alb);
+            const j = cans.findIndex(c => urlDe(c));
+            if (j === -1) { reanimar(card, 'shake'); return; }      // el álbum no tiene nada para escuchar
+            reproducirCancion(alb, cans, j);
+        }
+
+        // Marca la tarjeta del álbum que está sonando (en el inicio y en los perfiles)
+        function actualizarTarjetas() {
+            const id = reproduciendo ? reproduciendo.alb[0].trim() : null;
+            document.querySelectorAll('.card[data-id]').forEach(c => c.classList.toggle('sonando', c.dataset.id === id));
+        }
         document.addEventListener('keydown', e => {
             if (e.key !== 'Enter') return;
             const card = e.target.closest('.card[data-id]');
@@ -1105,6 +1146,7 @@
         function reproducirCancion(alb, cans, i) {
             const c = cans[i];
             reproduciendo = { alb, cans, i };
+            actualizarTarjetas();
             sonar(c[1], alb[2], urlDe(c), alb[3], alb, letraDe(c));
         }
 
@@ -1129,6 +1171,28 @@
                 const cs = cancionesDe(a);
                 const j = cs.findIndex(c => urlDe(c));
                 if (j !== -1) return reproducirCancion(a, cs, j);
+            }
+        }
+
+        // Anterior: si ya pasaron más de 3 segundos, vuelve al principio de la canción (como Spotify).
+        // Si no, va a la canción anterior; si era la primera, a la última del álbum anterior.
+        function anterior() {
+            if (!reproduciendo) return;
+            if (motor.tiempo > 3) { motor.seek(0); if (motor.pausado) motor.play(); return; }
+            const { alb, cans, i } = reproduciendo;
+
+            for (let j = i - 1; j >= 0; j--) if (urlDe(cans[j])) return reproducirCancion(alb, cans, j);
+
+            if (modoRepetir === 'album') {
+                for (let j = cans.length - 1; j >= i; j--) if (urlDe(cans[j])) return reproducirCancion(alb, cans, j);
+                return;
+            }
+
+            const inicio = albumes.indexOf(alb);
+            for (let k = 1; k <= albumes.length; k++) {
+                const a = albumes[(inicio - k + albumes.length * 2) % albumes.length];
+                const cs = cancionesDe(a);
+                for (let j = cs.length - 1; j >= 0; j--) if (urlDe(cs[j])) return reproducirCancion(a, cs, j);
             }
         }
 
@@ -1210,6 +1274,7 @@
             navigator.mediaSession.setActionHandler('play', () => motor.play());
             navigator.mediaSession.setActionHandler('pause', () => motor.pause());
             try { navigator.mediaSession.setActionHandler('nexttrack', () => siguiente()); } catch (_) {}
+            try { navigator.mediaSession.setActionHandler('previoustrack', () => anterior()); } catch (_) {}
             try { navigator.mediaSession.setActionHandler('seekto', d => motor.seek(d.seekTime)); } catch (_) {}
         }
 
